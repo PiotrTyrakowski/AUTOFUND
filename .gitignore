@@ -1,0 +1,8 @@
+.venv/
+v5.0/
+models/*
+!models/.gitkeep
+predictions/*
+!predictions/.gitkeep
+__pycache__/
+numerai_automl/__pycache__/
