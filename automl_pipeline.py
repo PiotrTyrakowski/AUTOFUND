@@ -12,7 +12,7 @@ from numerai_automl.config import LIGHTGBM_PARAMS_OPTION, FEATURE_SET_OPTION, TA
 
 def main():
     # Initialize DataLoader
-    data_loader = DataLoader(data_version="v5.0", download_data=True) # change this to False if you already have the data
+    data_loader = DataLoader(data_version="v5.0", download_data=False) # change this to False if you already have the data
 
     targets_list = TARGET_CANDIDATES
     lightgbm_params = LIGHTGBM_PARAMS_OPTION
