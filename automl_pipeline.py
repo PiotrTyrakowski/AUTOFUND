@@ -20,7 +20,8 @@ def main():
     
     # Load data
     train = data_loader.load_train_data(feature_set=feature_set, target_set=targets_list, downsample_step=4)
-    validation = data_loader.load_validation_data(feature_set=feature_set, target_set=targets_list, downsample_step=4)
+    validation = data_loader.load_validation_data(feature_set=feature_set, target_set=targets_list, downsample_step=4,
+                                                  start_index=1)
     
     # Extract features and target
     feature_cols = train.columns.tolist()
