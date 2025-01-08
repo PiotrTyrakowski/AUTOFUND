@@ -6,7 +6,10 @@ import json
 from typing import List
 import os
 
-class DataLoader:
+
+# TODO: Change it to be place where we can get data how we want it
+
+class DataLoaderSingleton:
     def __init__(self, data_version: str = "v5.0", download_data: bool = False):
         self.napi = NumerAPI()
         self.data_version = data_version

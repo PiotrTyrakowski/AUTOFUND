@@ -6,4 +6,12 @@ predictions/*
 !predictions/.gitkeep
 __pycache__/
 numerai_automl/__pycache__/
+numerai_automl/feature_neutralizer/__pycache__/
+numerai_automl/model_managers/__pycache__/
+numerai_automl/model_trainer/__pycache__/
+numerai_automl/reporter/__pycache__/
+numerai_automl/scorer/__pycache__/
+
 .idea/
+
+

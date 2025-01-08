@@ -3,6 +3,7 @@ import pickle
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
+import cloudpickle
 
 class AbstractModelManager(ABC):
     """
@@ -43,6 +44,15 @@ class AbstractModelManager(ABC):
         
         """
         pass
+
+
+    def save_model(model, filename: str):
+        with open(filename, "wb") as f:
+            cloudpickle.dump(model, f)
+
+    def load_model(filename: str):
+        with open(filename, "rb") as f:
+            return cloudpickle.load(f)
 
 class ModelManager(AbstractModelManager):
     """
