@@ -8,7 +8,8 @@ LIGHTGBM_PARAMS_OPTION = {
     "learning_rate": 0.01,
     "max_depth": 5,
     "num_leaves": 15,  # 2**4 - 1
-    "colsample_bytree": 0.1
+    "colsample_bytree": 0.1,
+    "n_jobs": -1
 }
 
 # for better accuracy

@@ -6,3 +6,4 @@ predictions/*
 !predictions/.gitkeep
 __pycache__/
 numerai_automl/__pycache__/
+.idea/

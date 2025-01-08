@@ -12,7 +12,7 @@ from numerai_automl.config import LIGHTGBM_PARAMS_OPTION, FEATURE_SET_OPTION, TA
 
 def main():
     # Initialize DataLoader
-    data_loader = DataLoader(data_version="v5.0", download_data=True) # change this to False if you already have the data
+    data_loader = DataLoader(data_version="v5.0", download_data=False) # change this to False if you already have the data
 
     targets_list = TARGET_CANDIDATES
     lightgbm_params = LIGHTGBM_PARAMS_OPTION
@@ -20,7 +20,8 @@ def main():
     
     # Load data
     train = data_loader.load_train_data(feature_set=feature_set, target_set=targets_list, downsample_step=4)
-    validation = data_loader.load_validation_data(feature_set=feature_set, target_set=targets_list, downsample_step=4)
+    validation = data_loader.load_validation_data(feature_set=feature_set, target_set=targets_list, downsample_step=4,
+                                                  start_index=1)
     
     # Extract features and target
     feature_cols = train.columns.tolist()
