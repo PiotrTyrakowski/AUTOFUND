@@ -50,7 +50,7 @@ class DataLoader:
             return json.load(f)
 
     # downsample_step is the number of eras to skip 4 is by default because 4 eras is 20 days (as per target)
-    def load_train_data(self, feature_set: str = "medium", target_set: List[str] = ["target"], downsample_step: int = 4) -> pd.DataFrame:
+    def load_train_data(self, feature_set: str = "medium", target_set: List[str] = ["target"], downsample_step: int = 4, start_era: int = 0) -> pd.DataFrame:
         features = self.feature_sets[feature_set]
         filepath = f"{self.data_version}/train.parquet"
         
@@ -61,9 +61,9 @@ class DataLoader:
                 raise FileNotFoundError(f"Train data not found at {filepath}")
                 
         train = pd.read_parquet(filepath, columns=["era"] + target_set + features)
-        return self._downsample_data(train, downsample_step)
+        return self._downsample_data(train, downsample_step, start_era)
 
-    def load_validation_data(self, feature_set: str = "medium", target_set: List[str] = ["target"], downsample_step: int = 4) -> pd.DataFrame:
+    def load_validation_data(self, feature_set: str = "medium", target_set: List[str] = ["target"], downsample_step: int = 4, start_era: int = 0) -> pd.DataFrame:
         features = self.feature_sets[feature_set]
         filepath = f"{self.data_version}/validation.parquet"
         
@@ -75,7 +75,7 @@ class DataLoader:
                 
         validation = pd.read_parquet(filepath, columns=["era", "data_type"] + target_set + features)
         validation = validation[validation["data_type"] == "validation"]
-        return self._downsample_data(validation, downsample_step)
+        return self._downsample_data(validation, downsample_step, start_era)
 
     def load_live_data(self, feature_set: str = "medium") -> pd.DataFrame:
         features = self.feature_sets[feature_set]
@@ -89,9 +89,9 @@ class DataLoader:
                 
         return pd.read_parquet(filepath, columns=features)
 
-    def _downsample_data(self, df: pd.DataFrame, downsample_step: int) -> pd.DataFrame:
+    def _downsample_data(self, df: pd.DataFrame, downsample_step: int, start_era: int) -> pd.DataFrame:
         """Helper method to downsample data by era"""
         if downsample_step > 1:
-            unique_eras = df["era"].unique()[::downsample_step]
+            unique_eras = df["era"].unique()[start_era::downsample_step]
             return df[df["era"].isin(unique_eras)]
         return df

@@ -1,3 +1,4 @@
+from typing import List
 from ..model_managers.abstract_model_manager import AbstractModelManager
 from ..config import TARGET_CANDIDATES
 
@@ -7,12 +8,11 @@ class ModelManager(AbstractModelManager):
 
     def __init__(self, targets: List[str]):
         self.targets = targets
-        self.models = {}
-        self.get_models()  # Initialize models upon creation
+        self.
 
     def get_models(self):
 
-        for 
+        for target in self.targets:
         """
         Initialize and return a dictionary of scikit-learn models.
         """
