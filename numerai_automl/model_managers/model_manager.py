@@ -10,16 +10,8 @@ class ModelManager(AbstractModelManager):
         self.targets = targets
         self.
 
-    def get_models(self):
+    def save_models(self):
 
-        for target in self.targets:
-        """
-        Initialize and return a dictionary of scikit-learn models.
-        """
-        if not self.models:
-            self.models = {
-                'logistic_regression': LogisticRegression(),
-                'decision_tree': DecisionTreeClassifier(),
-                'svc': SVC()
-            }
-        return self.models
+    def load_models(self):
+
+    
