@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# TODO: THis is bullshit don't look at this at all.
+
 class Reporter:
     def __init__(self, scores: pd.DataFrame):
         self.scores = scores
