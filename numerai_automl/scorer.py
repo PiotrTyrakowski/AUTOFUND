@@ -16,6 +16,7 @@ class Scorer:
 
     def compute_additional_scores(self, predictions: pd.DataFrame, targets: pd.Series, benchmark_models: pd.DataFrame = None) -> Dict[str, pd.Series]:
         scores = {}
+        small_change = 1
         if benchmark_models is not None:
             # Feature Neutral Correlation (FNC)
             # Correlation with the Meta Model (CWMM)
