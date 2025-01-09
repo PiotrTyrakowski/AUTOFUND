@@ -1,8 +1,5 @@
-# numerai_automl/data_loader.py
-
 import pandas as pd
 from numerapi import NumerAPI
-import json
 import os
 from numerai_automl.utils.utils import get_project_root
 
@@ -24,8 +21,8 @@ class DataDownloader:
         """Helper method to download a single file"""
         filepath = f"{self.project_root}/{self.data_version}/{filename}"
         if not os.path.exists(filepath):
-            print(f"Downloading {filepath}...")
-            self.napi.download_dataset(filepath)
+            print(f"Downloading {self.data_version}/{filename}...")
+            self.napi.download_dataset(f"{self.data_version}/{filename}", filepath)
 
     def download_train_data(self):
         self._download_file("train.parquet")
@@ -35,3 +32,6 @@ class DataDownloader:
 
     def download_live_data(self):
         self._download_file("live.parquet")
+
+    def download_features_data(self):
+        self._download_file("features.json")
