@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 import pandas as pd
-import random
+import random #TODO: add seed
 
 
 # PLAN TODO:
@@ -72,7 +72,7 @@ class TargetEnsembler:
         for i in range(num_models):
             models = self._choose_models_to_ensemble(numbers[i])
             ensemble = self.Ensemble(models=models, type_of_ensemble="average")
-            score = self.scorer.score(ensemble.predict(predictions)) #TODO: I want to score the ensemble using the scorer
+            score = self._get_score_of_ensemble(ensemble, predictions)
             scores.append(score)
         return ensembles[scores.index(max(scores))]
     def _weighted_average(self, predictions: pd.DataFrame, num_models: int = 30) -> Ensemble:
@@ -83,7 +83,7 @@ class TargetEnsembler:
             models = self._choose_models_to_ensemble(numbers[i])
             weights = self._random_weights(len(models))
             ensemble = self.Ensemble(models=models, type_of_ensemble="weighted_average", list_of_weights=weights)
-            score = self.scorer.score(ensemble.predict(predictions))
+            score = self._get_score_of_ensemble(ensemble, predictions)
             scores.append(score)
         return ensembles[scores.index(max(scores))]
 
@@ -99,5 +99,9 @@ class TargetEnsembler:
         # Generate random weights that sum to 1
         weights = [random.random() for _ in range(number)]
         return [w / sum(weights) for w in weights]
+
+    def _get_score_of_ensemble(self, ensemble: Ensemble, predictions: pd.DataFrame) -> float:
+        return self.scorer.score(ensemble.predict(predictions, self.main_target_era)) # TODO: I need to change it
+        # after someone will implement the scorer
 
 
