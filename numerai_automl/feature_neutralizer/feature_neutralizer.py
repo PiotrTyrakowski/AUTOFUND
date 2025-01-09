@@ -48,16 +48,10 @@ class FeatureNeutralizer:
             features_to_neutralize = random.sample(self.all_features, number_of_features_to_neutralize)
             proportion = random.choice(self.proportions)
 
-            neutralized_predictions = self.apply_neutralization(predictions, data[features_to_neutralize], proportion)
-            scores = self.scorer.compute_scores(neutralized_predictions, self.target_name)
-
-            neutralized_predictions[f"neutralized_predictions_{i}"] = {
-                "features_to_neutralize": features_to_neutralize,
-                "scores": scores
-            }
-
+            neutralized_predictions[f"neutralized_predictions_{i}"] = self.apply_neutralization(predictions, data[features_to_neutralize], proportion)
             
-           
+        
+        scores = self.scorer.compute_scores(neutralized_predictions, self.target_name)
         # Implementation needed here
         
         pass
