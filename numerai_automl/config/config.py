@@ -21,6 +21,17 @@ LIGHTGBM_PARAMS_OPTION = {
 #     "colsample_bytree": 0.1,
 #     "min_data_in_leaf": 10000
 # }
+
+LIGHTGBM_PARAM_GRID={ # TODO: find better param grid in papers
+    'learning_rate': [0.01, 0.05, 0.1, 0.2],
+    'n_estimators': [100, 300, 500, 1000],
+    'max_depth': [-1, 3, 5, 7, 10],
+    'num_leaves': [20, 31, 50, 70],
+    'min_child_samples': [10, 20, 50, 100],
+    'subsample': [0.6, 0.8, 1.0],
+    'colsample_bytree': [0.6, 0.8, 1.0]
+}
+
 TARGET_CANDIDATES = [
     "target_agnes_20", "target_agnes_60",
     "target_alpha_20", "target_alpha_60", 
