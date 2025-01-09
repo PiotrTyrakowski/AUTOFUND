@@ -22,6 +22,7 @@ class FeatureNeutralizer:
         self.proportions = proportions
         self.scorer = Scorer()
         self.target_name = target_name
+        
     def find_neutralization_features_and_proportions(self, data: pd.DataFrame, predictions: Union[pd.DataFrame, pd.Series]) -> Dict[str, Union[List[str], float]]:
         """
         Identifies the features and proportions to use for neutralization.

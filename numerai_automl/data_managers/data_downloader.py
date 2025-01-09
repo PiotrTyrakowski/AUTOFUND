@@ -1,8 +1,5 @@
-# numerai_automl/data_loader.py
-
 import pandas as pd
 from numerapi import NumerAPI
-import json
 import os
 from numerai_automl.utils.utils import get_project_root
 
