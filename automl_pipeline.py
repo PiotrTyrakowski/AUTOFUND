@@ -4,9 +4,9 @@ import pandas as pd
 from numerai_automl.data_loader import DataLoader
 from numerai_automl.model_trainer import ModelTrainer
 from numerai_automl.feature_neutralizer import FeatureNeutralizer
-from numerai_automl.scorer import Scorer
+from numerai_automl.scorer.scorer import Scorer
 from numerai_automl.reporter import Reporter
-from numerai_automl.utils import save_model
+from numerai_automl.utils.utils import save_model
 import cloudpickle
 from numerai_automl.config import LIGHTGBM_PARAMS_OPTION, FEATURE_SET_OPTION, TARGET_CANDIDATES
 
