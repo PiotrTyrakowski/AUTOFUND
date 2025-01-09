@@ -5,8 +5,8 @@ import pandas as pd
 from numerai_tools.scoring import numerai_corr, correlation_contribution
 
 class Scorer:
-    def __init__(self, meta_model: pd.Series = None):
-        self.meta_model = meta_model
+    def __init__(self):
+        pass
 
     def compute_scores(self, data: pd.DataFrame, target_name: str) -> pd.DataFrame:
         """
@@ -29,6 +29,36 @@ class Scorer:
         The DataFrame will have different rows for each set of predictions, 
         with metrics calculated for each.
         """
-        pass
 
+        prediction_cols = [col for col in data.columns if col.startswith("prediction_")]
+
+        correlations = data.groupby("era").apply(
+            lambda d: numerai_corr(d[prediction_cols], d[target_name])
+        )
+        cumsum_corrs = correlations.cumsum()
+
+        def get_summary_metrics(scores, cumsum_scores):
+            summary_metrics = {}
+            # per era correlation between predictions of the model trained on this target and cyrus
+            mean = scores.mean()
+            std = scores.std()
+            sharpe = mean / std
+            rolling_max = cumsum_scores.expanding(min_periods=1).max()
+            max_drawdown = (rolling_max - cumsum_scores).max()
+            return {
+                "mean": mean,
+                "std": std,
+                "sharpe": sharpe,
+                "max_drawdown": max_drawdown,
+            }
+        target_summary_metrics = {}
+
+        for pred_col in prediction_cols:
+            target_summary_metrics[pred_col] = get_summary_metrics(
+                correlations[pred_col], cumsum_corrs[pred_col]
+            )
+        pd.set_option('display.float_format', lambda x: '%f' % x)
+        summary = pd.DataFrame(target_summary_metrics).T
+
+        return summary
     
