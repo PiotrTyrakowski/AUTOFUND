@@ -5,8 +5,8 @@ import pandas as pd
 from numerai_tools.scoring import numerai_corr, correlation_contribution
 
 class Scorer:
-    def __init__(self, meta_model: pd.Series = None):
-        self.meta_model = meta_model
+    def __init__(self):
+        pass
 
     def compute_scores(self, data: pd.DataFrame, target_name: str) -> pd.DataFrame:
         """

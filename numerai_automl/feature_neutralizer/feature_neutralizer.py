@@ -1,11 +1,13 @@
+import random
 import lightgbm as lgb
 from typing import Dict, List, Union
 import pandas as pd
 from numerai_tools.scoring import neutralize
+from numerai_automl.scorer.scorer import Scorer
 
 
 class FeatureNeutralizer:
-    def __init__(self, all_features: List[str], iterations: int=10, max_number_of_features_to_neutralize: int=6, proportions: List[float]=[0.25, 0.5, 0.75, 1.0]):
+    def __init__(self, all_features: List[str], target_name: str, iterations: int=10, max_number_of_features_to_neutralize: int=6, proportions: List[float]=[0.25, 0.5, 0.75, 1.0]):
         """
         Initializes the FeatureNeutralizer with the given parameters.
 
@@ -14,10 +16,12 @@ class FeatureNeutralizer:
         :param max_number_of_features_to_neutralize: Maximum number of features to neutralize (default is 6).
         :param proportions: List of proportions to use for neutralization (default is [0.25, 0.5, 0.75, 1.0]).
         """
+        self.iterations = iterations
         self.all_features = all_features
         self.max_number_of_features_to_neutralize = max_number_of_features_to_neutralize
         self.proportions = proportions
-
+        self.scorer = Scorer()
+        self.target_name = target_name
     def find_neutralization_features_and_proportions(self, data: pd.DataFrame, predictions: Union[pd.DataFrame, pd.Series]) -> Dict[str, Union[List[str], float]]:
         """
         Identifies the features and proportions to use for neutralization.
@@ -36,7 +40,26 @@ class FeatureNeutralizer:
                     "proportion": 0.5
                  }
         """
+
+        neutralized_predictions = data[["era", self.target_name]].copy()
+
+        for i in range(self.iterations):
+            number_of_features_to_neutralize = random.randint(1, self.max_number_of_features_to_neutralize)
+            features_to_neutralize = random.sample(self.all_features, number_of_features_to_neutralize)
+            proportion = random.choice(self.proportions)
+
+            neutralized_predictions = self.apply_neutralization(predictions, data[features_to_neutralize], proportion)
+            scores = self.scorer.compute_scores(neutralized_predictions, self.target_name)
+
+            neutralized_predictions[f"neutralized_predictions_{i}"] = {
+                "features_to_neutralize": features_to_neutralize,
+                "scores": scores
+            }
+
+            
+           
         # Implementation needed here
+        
         pass
 
     def apply_neutralization(self, predictions: pd.DataFrame, features: pd.DataFrame, proportion: float) -> pd.DataFrame:
