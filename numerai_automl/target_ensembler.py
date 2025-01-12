@@ -52,19 +52,19 @@ class TargetEnsembler:
             Returns:
             - pd.DataFrame: A DataFrame containing only the (main) target variable predictions.
             """
-            if self.type_of_ensemble is "average":
+            if self.type_of_ensemble == "average":
                 predictions = pd.DataFrame()
                 for name, model in self.models.items():
                     predictions[name] = model.predict(X)
                 predictions["era"] = X["era"]
                 return predictions.groupby("era").rank(pct=True).mean(axis=1)
-            elif self.type_of_ensemble is "weighted_average":
+            elif self.type_of_ensemble == "weighted_average":
                 predictions = pd.DataFrame()
                 for name, model in self.models.items():
                     predictions[name] = model.predict(X)
                 predictions["era"] = X["era"]
                 return predictions.groupby("era").rank(pct=True).apply(lambda x: (x * self.list_of_weights).sum(axis=1))
-            elif self.type_of_ensemble is "lightgbm" or "linear_regression":
+            elif self.type_of_ensemble == ("lightgbm" or "linear_regression"):
                 if self.main_model is None:
                     raise ValueError(f"Main model is not defined for {self.type_of_ensemble} ensemble.")
                 X_for_main_model = X.copy()
