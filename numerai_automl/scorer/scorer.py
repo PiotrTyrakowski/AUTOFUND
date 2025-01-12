@@ -30,7 +30,7 @@ class Scorer:
         with metrics calculated for each.
         """
 
-        prediction_cols = [col for col in data.columns if col.startswith("prediction_")]
+        prediction_cols = [col for col in data.columns if "prediction" in col]
 
         correlations = data.groupby("era").apply(
             lambda d: numerai_corr(d[prediction_cols], d[target_name])
