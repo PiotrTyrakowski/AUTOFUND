@@ -24,7 +24,7 @@ def test_model_manager2():
     neutralized_predictions = model_manager.create_neutralized_predictions_from_base_models_predictions()
 
     # plot those predictions on the same plot
-   
+    print(neutralized_predictions[['target', 'neutralized_predictions_model_target', 'neutralized_predictions_model_target_victor_20']])
 
 
 def test_model_manager3():
@@ -42,4 +42,4 @@ def test_model_manager3():
     print(neutralized_predictions[['target', 'neutralized_predictions_model_target', 'neutralized_predictions_model_target_victor_20']])
 
 if __name__ == "__main__":
-    test_model_manager2()
+    test_model_manager()
