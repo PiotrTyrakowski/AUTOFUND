@@ -22,14 +22,20 @@ LIGHTGBM_PARAMS_OPTION = {
 #     "min_data_in_leaf": 10000
 # }
 
-LIGHTGBM_PARAM_GRID={ # TODO: find better param grid in papers
-    'learning_rate': [0.01, 0.05, 0.1, 0.2],
-    'n_estimators': [100, 300, 500, 1000],
-    'max_depth': [-1, 3, 5, 7, 10],
-    'num_leaves': [20, 31, 50, 70],
-    'min_child_samples': [10, 20, 50, 100],
-    'subsample': [0.6, 0.8, 1.0],
-    'colsample_bytree': [0.6, 0.8, 1.0]
+LIGHTGBM_PARAM_GRID={
+    'learning_rate': [0.01, 0.05, 0.1, 0.2, 0.3, 0.5],
+    'n_estimators': [20, 50, 100, 300, 500, 1000, 1500, 2000],
+    'max_depth': [-1, 3, 5, 7, 10, 12],
+    'num_leaves': [20, 31, 50, 70, 100, 150],
+    'min_child_samples': [10, 20, 50, 100, 200],
+    'subsample': [0.1, 0.2, 0.4, 0.6, 0.8, 1.0],
+    'colsample_bytree': [0.1, 0.2, 0.4, 0.6, 0.8, 1.0],
+    'n_jobs': [-1]
+}
+
+ELASTIC_NET_PARAM_GRID = {
+    'alpha': [0.1, 0.5, 1.0, 5.0, 10.0, 50.0],  # Regularization strength
+    'l1_ratio': [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]  # Mixing ratio (L1 vs L2)
 }
 
 TARGET_CANDIDATES = [

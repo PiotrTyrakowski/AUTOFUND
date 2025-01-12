@@ -6,8 +6,10 @@ import numpy as np
 import random
 from sklearn.preprocessing import MinMaxScaler
 from numerai_automl.scorer.scorer import Scorer
-from numerai_automl.config.config import LIGHTGBM_PARAM_GRID
+from numerai_automl.config.config import LIGHTGBM_PARAM_GRID, ELASTIC_NET_PARAM_GRID
 import lightgbm as lgb
+from sklearn.linear_model import ElasticNet, LinearRegression, Lasso
+from sklearn.neighbors import KNeighborsRegressor
 
 random.seed(42)
 np.random.seed(42)
@@ -28,14 +30,20 @@ class TargetEnsembler:
     class Ensemble:  # this class could inherit from Model class from sklearn
         def __init__(self, models: Dict[str, Any], type_of_ensemble: str = "rank_mean", main_model: Any = None,
                      list_of_weights: List[float] = None):
+            """
+            This class represents the ensemble of models with different methods
+            :param models: dictionary with side models that will be used in ensemble by meta-model
+            :param type_of_ensemble: type of ensemble method: average, weighted_average, lightgbm, linear_regression
+            :param main_model: model that will be used as meta-model in ensemble: LGBM or ElasticNet or
+            None if type_of_ensemble is rank_mean or weighted_average
+            :param list_of_weights: list of weights for weighted_average method
+            """
             self.models = models
-            self.type_of_ensemble = type_of_ensemble  # This is type of ensemble method
+            self.type_of_ensemble = type_of_ensemble
             self.main_model = main_model
-            # main model is model instance if type_of_ensemble is model_LGBM or model_LR and
-            # None if type_of_ensemble is rank_mean or weighted_average
-            self.list_of_weights = list_of_weights  # list of weights for weighted_average method
+            self.list_of_weights = list_of_weights
 
-        def predict(self, X: pd.DataFrame) -> pd.DataFrame:
+        def predict(self, X: pd.DataFrame) -> pd.DataFrame:  # TODO: probably broken
             """
             This method predicts the target variable based on the ensemble method which is defined in the constructor
 
@@ -45,19 +53,19 @@ class TargetEnsembler:
             Returns:
             - pd.DataFrame: A DataFrame containing only the (main) target variable predictions.
             """
-            if self.type_of_ensemble is "average":
+            if self.type_of_ensemble == "average":
+                predictions = pd.DataFrame()
+                for name, model in self.models.items():
+                    predictions[name] = model.predict(X.drop(columns=["era"]))
+                predictions["era"] = X["era"]
+                return pd.DataFrame(predictions.groupby("era").rank(pct=True).mean(axis=1))
+            elif self.type_of_ensemble == "weighted_average":
                 predictions = pd.DataFrame()
                 for name, model in self.models.items():
                     predictions[name] = model.predict(X)
                 predictions["era"] = X["era"]
-                return predictions.groupby("era").rank(pct=True).mean(axis=1)
-            elif self.type_of_ensemble is "weighted_average":
-                predictions = pd.DataFrame()
-                for name, model in self.models.items():
-                    predictions[name] = model.predict(X)
-                predictions["era"] = X["era"]
-                return predictions.groupby("era").rank(pct=True).apply(lambda x: (x * self.list_of_weights).sum(axis=1))
-            elif self.type_of_ensemble is "lightgbm" or "linear_regression":
+                return (predictions.groupby("era").rank(pct=True) * self.list_of_weights).sum(axis=1)
+            elif self.type_of_ensemble == ("lightgbm" or "linear_regression"):
                 if self.main_model is None:
                     raise ValueError(f"Main model is not defined for {self.type_of_ensemble} ensemble.")
                 X_for_main_model = X.copy()
@@ -69,23 +77,71 @@ class TargetEnsembler:
             else:
                 raise ValueError(f"Invalid type of ensemble: {self.type_of_ensemble}")
 
+        def easy_predict(self, predictions: pd.DataFrame) -> pd.Series:
+            if self.type_of_ensemble == "average":
+                columns_to_take = list(self.models.keys()) + ["era"]
+                predictions = predictions[columns_to_take]
+                return pd.Series(predictions.groupby("era").rank(pct=True).mean(axis=1))
+            elif self.type_of_ensemble == "weighted_average":
+                columns_to_take = list(self.models.keys()) + ["era"]
+                predictions = predictions[columns_to_take]
+                return pd.Series(
+                    (predictions.groupby("era").rank(pct=True) * self.list_of_weights).sum(axis=1))
+            elif self.type_of_ensemble == ("lightgbm" or "linear_regression"):
+                min_max_scaler = MinMaxScaler(feature_range=(0, 1))
+                if "era" not in predictions.columns:
+                    return pd.Series(
+                        min_max_scaler.fit_transform(self.main_model.predict(predictions)))
+                return pd.Series(
+                    min_max_scaler.fit_transform(
+                        self.main_model.predict(predictions.drop(labels=['era'], axis=1)).reshape(-1, 1)
+                    ).ravel()
+                )
+
         def __str__(self):
+            if self.type_of_ensemble == "weighted_average":
+                return f"Ensemble: {self.type_of_ensemble} with models: {self.models.keys()} and weights: {self.list_of_weights}"
+            if self.type_of_ensemble == "lightgbm" or self.type_of_ensemble == "linear_regression":
+                return (f"Ensemble: {self.type_of_ensemble} with models: {self.models.keys()} and main model: "
+                        f"{self.main_model} and parameters: {self.main_model.get_params()}")
             return f"Ensemble: {self.type_of_ensemble} with models: {self.models.keys()}"
 
         def __repr__(self):
+            if self.type_of_ensemble == "weighted_average":
+                return f"Ensemble: {self.type_of_ensemble} with models: {self.models.keys()} and weights: {self.list_of_weights}"
+            if self.type_of_ensemble == "lightgbm" or self.type_of_ensemble == "linear_regression":
+                return (f"Ensemble: {self.type_of_ensemble} with models: {self.models.keys()} and main model: "
+                        f"{self.main_model} and parameters: {self.main_model.get_params()}")
             return f"Ensemble: {self.type_of_ensemble} with models: {self.models.keys()}"
 
         def get_models_names(self) -> List[str]:
             return list(self.models.keys())
 
-    def __init__(self, models: Dict[str, Any], main_target: str = 'target'):
+    def __init__(self, models: Dict[str, Any], predictions_train: pd.DataFrame, predictions: pd.DataFrame, number_of_interations: int = 30,
+                 main_target: str = 'target'):
+        """
+        This class represents the TargetEnsembler which creates ensembles based on the given models
+        :param models: dictionary with models that will be used in ensembles
+        :param main_target: name of the main target variable
+        :param predictions_train: dataframe with predictions of the models from the models dictionary on training data
+        :param predictions: dataframe with predictions of the models from the models dictionary on validation data
+        :param number_of_interations: number of iterations for the ensemble methods, it's for looking for the best ensemble
+        :var scorer: instance of the Scorer class
+        :var methods: list of ensemble methods: average, weighted_average, lightgbm, linear_regression, random, None;
+        None means that it will choose all methods and user will be able to compare the results
+        """
+        # predictions should have era column
+        assert 'era' in predictions.columns, "predictions should have era column"
+        assert 'era' in predictions_train.columns, "predictions_train should have era column"
         self.models = models
         self.scorer = Scorer()
         self.main_target = main_target
-        self.methods = ["average", "weighted_average", "lightgbm", "linear_regression", "random", None]
-        # None means that it will choose all methods and user will be able to compare the results
+        self.methods = ["average", "weighted_average", "lightgbm", "random", None]
+        self.predictions_train = predictions_train
+        self.predictions = predictions
+        self.number_of_interations = number_of_interations
 
-    def ensemble(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame,
+    def ensemble(self, y_train: pd.DataFrame,
                  y_val: pd.DataFrame, method: str = None) -> Dict[str, Ensemble]:
         """
         This method creates various ensembles based on the method parameter and chooses the best one from each category
@@ -99,65 +155,79 @@ class TargetEnsembler:
         the best ensemble for the given method
         """
         if method is None:
-            return self._ensemble_all_methods(X_train, y_train, X_val, y_val)
+            return self._ensemble_all_methods(y_train,y_val, num=self.number_of_interations)
         elif method == "average":
-            return {"average": self._average(X_val, y_val)}
+            return {"average": self._average(y_val, num_models=self.number_of_interations)}
         elif method == "weighted_average":
-            return {"weighted_average": self._weighted_average(X_val, y_val)}
+            return {"weighted_average": self._weighted_average(y_val, num_models=self.number_of_interations)}
         elif method == "lightgbm":
-            return {"lightgbm": self._lightgbm(X_train, y_train, X_val, y_val)}
-        elif method == "linear_regression":
-            return {"linear_regression": self._linear_regression(X_train, y_train, X_val, y_val)}
+            return {"lightgbm": self._lightgbm(y_train,  y_val, num_models=self.number_of_interations)}
         elif method == "random":
-            return self._random_method(X_train, y_train, X_val, y_val)
+            return self._random_method(y_train,  y_val, num = self.number_of_interations)
         else:
             raise ValueError(f"Invalid method: {method}")
 
-    def _average(self, X: pd.DataFrame, y:pd.DataFrame, num_models: int = 30) -> Ensemble:
-        scores = [] # TODO: change it to be more memory efficient, _weighted_average too
-        ensembles = []
+    def _average(self, y: pd.DataFrame | pd.Series,
+                 num_models: int = 30) -> Ensemble:  # TODO set default num_models to bigger number in future
         numbers = [random.randint(1, 7) for i in range(num_models)]
+        list_of_ensembles = [None for _ in range(num_models)]
+        predictions = pd.DataFrame()
         for i in range(num_models):
             models = self._choose_models_to_ensemble(numbers[i])
             ensemble = self.Ensemble(models=models, type_of_ensemble="average")
-            score = self._get_score_of_ensemble(ensemble, X, y)
-            scores.append(score)
-            ensembles.append(ensemble)
-        return ensembles[scores.index(max(scores))]
+            list_of_ensembles[i] = ensemble
+            predictions[f"prediction_{i}"] = ensemble.easy_predict(self.predictions)
+        predictions = self._prepair_predictions_for_scoring(predictions, y)
+        return list_of_ensembles[self._which_ensemble(predictions)]
 
-    def _weighted_average(self, X: pd.DataFrame, y:pd.DataFrame, num_models: int = 30) -> Ensemble:
-        scores = []
-        ensembles = []
+    def _prepair_predictions_for_scoring(self, predictions: pd.DataFrame, y: pd.DataFrame | pd.Series) -> pd.DataFrame:
+        predictions["era"] = self.predictions["era"]
+        if type(y) == pd.DataFrame:
+            predictions[self.main_target] = y[self.main_target].reset_index(drop=True)
+        elif type(y) == pd.Series:
+            predictions[self.main_target] = y.reset_index(drop=True)
+        else:
+            raise ValueError("y should be pd.DataFrame or pd.Series")
+        return predictions
+
+    def _which_ensemble(self, pred: pd.DataFrame) -> int:
+        df = self.scorer.compute_scores(pred, self.main_target)
+        df = df["mean"]
+        i = df.sort_values(ascending=False).index[0]
+        if type(i) == str:
+            return int(i.split("_")[1])
+        else:
+            i = int(i)
+        return i
+
+    def _weighted_average(self, y: pd.DataFrame | pd.Series, num_models: int = 30) -> Ensemble:
         numbers = [random.randint(1, 7) for i in range(num_models)]
+        list_of_ensembles = [None for _ in range(num_models)]
+        predictions = pd.DataFrame()
         for i in range(num_models):
             models = self._choose_models_to_ensemble(numbers[i])
             weights = self._random_weights(len(models))
             ensemble = self.Ensemble(models=models, type_of_ensemble="weighted_average", list_of_weights=weights)
-            score = self._get_score_of_ensemble(ensemble, X, y)
-            scores.append(score)
-            ensembles.append(ensemble)
-        return ensembles[scores.index(max(scores))]
+            list_of_ensembles[i] = ensemble
+            predictions[f"prediction_{i}"] = ensemble.easy_predict(self.predictions)
+        predictions = self._prepair_predictions_for_scoring(predictions, y)
+        return list_of_ensembles[self._which_ensemble(predictions)]
 
-    def _lightgbm(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame, y_val: pd.DataFrame,
-                    num_models: int = 30) -> Ensemble:
-        param_space= LIGHTGBM_PARAM_GRID
-        best_ensemble=None
-        best_score=-float('inf')
+    def _lightgbm(self,  y_train: pd.DataFrame, y_val: pd.DataFrame,
+                  num_models: int = 10) -> Ensemble:
+        param_space = LIGHTGBM_PARAM_GRID
+        list_of_ensembles = [None for _ in range(num_models)]
+        predictions = pd.DataFrame()
         for i in range(num_models):
             params = {k: random.choice(v) for k, v in param_space.items()}
             meta_model = lgb.LGBMRegressor(**params)
-            meta_model.fit(X_train, y_train[self.main_target])
-            ensemble=self.Ensemble(models=self.models, type_of_ensemble="lightgbm", main_model=meta_model)
-            score = self._get_score_of_ensemble(ensemble, X_val, y_val)
-            if score > best_score:
-                best_score=score
-                best_ensemble=ensemble
-        return best_ensemble
-
-    def _linear_regression(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame, y_val: pd.DataFrame,
-                    num_models: int = 30) -> Ensemble:
-        # TODO: implement linear regression model as meta-model
-        pass
+            meta_model.fit(self.predictions_train.drop(labels='era', axis=1).reset_index(drop=True),
+                           y_train[self.main_target].reset_index(drop=True))
+            ensemble = self.Ensemble(models=self.models, type_of_ensemble="lightgbm", main_model=meta_model)
+            list_of_ensembles[i] = ensemble
+            predictions[f"prediction_{i}"] = ensemble.easy_predict(self.predictions)
+        predictions = self._prepair_predictions_for_scoring(predictions, y_val)
+        return list_of_ensembles[self._which_ensemble(predictions)]
 
     def _choose_models_to_ensemble(self, number: int = 4) -> Dict[str, Any]:
         if number <= 0 or number > 7:
@@ -168,14 +238,44 @@ class TargetEnsembler:
 
     @staticmethod
     def _random_weights(number: int) -> List[float]:
-        # Generate random weights that sum to 1
+        """
+        This method generates random weights for the weighted_average ensemble method that sum up to 1
+        :param number: number of weights
+        :return: list of random weights that sum up to 1
+        """
         weights = [random.random() for _ in range(number)]
         return [w / sum(weights) for w in weights]
 
     def _get_score_of_ensemble(self, ensemble: Ensemble, X: pd.DataFrame, y: pd.DataFrame) -> float:
+        """
+        This method computes the score of the ensemble based on the main target variable
+        :param ensemble: ensemble of side models and meta-model that will be used to predict the main target variable
+        :param X: features and era column
+        :param y: target variables, could be all targets or only the main target
+        :return: score of the ensemble based on the main target variable and main target variable predictions
+        """
         y = y[self.main_target]
         predictions = ensemble.predict(X)
         predictions.columns = [f"prediction_{col}" for col in predictions.columns]
+        # in fact this is one column with prediction of the main target
         predictions[self.main_target] = y
         predictions["era"] = X["era"]
         return self.scorer.compute_scores(predictions, self.main_target)["mean"].mean()
+
+    def _ensemble_all_methods(self, y_train: pd.DataFrame, y_val: pd.DataFrame, num: int = 30) -> Dict[str, Ensemble]:
+        """
+        This method creates all possible ensembles and chooses the best one from each category
+        :return: dictionary with the best ensemble for each method
+        """
+        best_ensembles = {}
+        for method in ["average", "weighted_average", "lightgbm"]:
+            best_ensembles = best_ensembles | self.ensemble(y_train, y_val, method)
+        return best_ensembles
+
+    def _random_method(self, y_train: pd.DataFrame, y_val: pd.DataFrame) -> Dict[str, Ensemble]:
+        """
+        This method chooses random ensemble method from the list of methods
+        :return: dictionary with the best ensemble for the random method
+        """
+        which_method = random.choice(self.methods)
+        return self.ensemble(y_train, y_val, which_method)
