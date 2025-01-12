@@ -33,6 +33,16 @@ class DataManager:
 
     def load_neutralized_predictions_for_base_models(self):
         return self.data_loader.load_neutralized_predictions_data()
+    
+    def load_ranked_neutralized_predictions_for_base_models(self):
+        all_neutralized_predictions = self.load_neutralized_predictions_for_base_models()
+        cols = [col for col in all_neutralized_predictions.columns if "neutralized" in col]
+        
+        neutralized_predictions = all_neutralized_predictions.copy()
+        neutralized_predictions[cols] = neutralized_predictions.groupby("era")[cols].rank(pct=True)
+
+        return neutralized_predictions
+
 
     # TODO: maybe not all predictions but only subset of them change in future.
     def load_validation_data_for_neutralization_of_base_models(self):
