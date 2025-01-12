@@ -7,7 +7,7 @@ from numerai_automl.scorer.scorer import Scorer
 
 
 class FeatureNeutralizer:
-    def __init__(self, all_features: List[str], target_name: str, iterations: int=10, max_number_of_features_to_neutralize: int=6, proportions: List[float]=[0.25, 0.5, 0.75, 1.0]):
+    def __init__(self, all_features: List[str], target_name: str = "target", iterations: int=10, max_number_of_features_to_neutralize: int=5, proportions: List[float]=[0.25, 0.5, 0.75, 1.0]):
         """
         Initializes the FeatureNeutralizer with the given parameters.
 
@@ -71,7 +71,15 @@ class FeatureNeutralizer:
         # key is "neutralized_predictions_{i}" and value is dict with keys "features_to_neutralize" and "proportion"
         features_and_proportions = {}
 
-        for i in range(self.iterations):
+        # first neutralization is the original predictions
+        neutralized_predictions[f"neutralized_predictions_{0}"] = predictions
+
+        features_and_proportions[f"neutralized_predictions_{0}"] = {
+            "features_to_neutralize": [],
+            "proportion": 0
+        }
+
+        for i in range(1, self.iterations + 1):
             number_of_features_to_neutralize = random.randint(1, self.max_number_of_features_to_neutralize)
             features_to_neutralize = random.sample(self.all_features, number_of_features_to_neutralize)
             proportion = random.choice(self.proportions)
@@ -110,30 +118,28 @@ class FeatureNeutralizer:
             "scores": best_scores
         }
 
-    # TODO: THIS WILL BE FOR THE LIVE DATA I NEED TO REPAIR IT TO WORK. BECAUSE LIVE DATA DOES NOT HAVE ERA.
-    def apply_neutralization(self, predictions: pd.DataFrame, features_with_era: pd.DataFrame, proportion: float) -> pd.DataFrame:
+    def apply_neutralization(self, data: pd.DataFrame, prediction_name: str, neutralization_params: Dict) -> pd.DataFrame:
         """
         Applies neutralization to the predictions based on the specified features and proportion.
 
-        :param predictions: DataFrame containing the predictions to be neutralized.
-        :param features: DataFrame containing the features to be used for neutralization with era column.
-        :param proportion: The proportion of the feature effect to neutralize.
-
-        :return: A DataFrame with neutralized predictions.
+        :param data: DataFrame containing features, era, and predictions
+        :param prediction_name: Name of the column containing predictions
+        :param neutralization_params: Dictionary with features_to_neutralize and proportion
+        :return: A DataFrame with neutralized predictions
         """
 
-        # check if the predictions have column named "prediction"
-        assert "prediction" in predictions.columns, "The predictions do not have a column named 'prediction'"
+        neutralized_predictions = data.groupby("era", group_keys=True).apply(
+                lambda d: neutralize(
+                d[[prediction_name]],
+                d[neutralization_params["features_to_neutralize"]],
+                proportion=neutralization_params["proportion"]
+                )
+            ).reset_index().set_index("id")
+        
+        # Rename the prediction column to match the input name
+        neutralized_predictions.rename(columns={prediction_name: f"neutralized_{prediction_name}"}, inplace=True)
+        
+        return neutralized_predictions
 
-        # check if the predictions and features have the same ids
-        assert (predictions["id"] == features_with_era["id"]).all(), "The predictions and features do not have the same ids"
-
-        # create new dataframe with predictions and features
-        data = pd.concat([predictions, features_with_era], axis=1)
-
-
-        # Apply neutralization using the specified features and proportion
-        neutralized = neutralize(neutralized, features, proportion=proportion)
-        return neutralized
 
   

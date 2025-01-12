@@ -53,6 +53,8 @@ TARGET_CANDIDATES = [
     "target_xerxes_20", "target_xerxes_60"
 ]
 
+MAIN_TARGET = "target"
+
 FEATURE_NEUTRALIZATION_PROPORTIONS = [0.25, 0.5, 0.75, 1.0]
 
 FEATURE_SET_OPTIONS = ["small", "medium", "large"]

@@ -61,26 +61,27 @@ class DataLoader:
                 
         return pd.read_parquet(filepath, columns=self.features)
 
+    # TODO: when prediction list is non empty this is incorrect because there are more columns that i care about change that
     # Load vanilla predictions data
-    def load_vanila_predictions_data(self, predictions: List[str] = []) -> pd.DataFrame:
+    def load_vanila_predictions_data(self) -> pd.DataFrame:
         filepath = f"{self.project_root}/predictions/vanila_predictions.parquet"
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Vanila prediction data not found at {filepath}")
-        return pd.read_parquet(filepath, columns=predictions) if predictions else pd.read_parquet(filepath)
+        return  pd.read_parquet(filepath)
     
     # Load neutralized predictions data
-    def load_neutralized_predictions_data(self, predictions: List[str] = []) -> pd.DataFrame:
+    def load_neutralized_predictions_data(self) -> pd.DataFrame:
         filepath = f"{self.project_root}/predictions/neutralized_predictions.parquet"
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Neutralized prediction data not found at {filepath}")
-        return pd.read_parquet(filepath, columns=predictions) if predictions else pd.read_parquet(filepath)
+        return  pd.read_parquet(filepath)
     
     # Load ensembled predictions data
-    def load_ensembled_predictions_data(self, predictions: List[str] = []) -> pd.DataFrame:
+    def load_ensembled_predictions_data(self) -> pd.DataFrame:
         filepath = f"{self.project_root}/predictions/ensembled_predictions.parquet"
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Ensembled prediction data not found at {filepath}")
-        return pd.read_parquet(filepath, columns=predictions) if predictions else pd.read_parquet(filepath)
+        return pd.read_parquet(filepath)
 
     def _downsample_data(self, df: pd.DataFrame, downsample_step: int, start_era: int) -> pd.DataFrame:
         """Helper method to downsample data by era"""
