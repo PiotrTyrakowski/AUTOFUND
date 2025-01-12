@@ -11,10 +11,15 @@ def save_model(model, filename: str):
 def load_model(filename: str):
     with open(filename, "rb") as f:
         return cloudpickle.load(f)
-import os
 
 
 def get_project_root():
+    """
+    Get the root directory of the project
+    {$HOME}/AUTOFUND
+    """
     current_file_path = os.path.abspath(__file__)
     return os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 
+if __name__ == "__main__":
+    print(get_project_root())
