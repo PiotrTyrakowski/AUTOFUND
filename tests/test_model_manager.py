@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
 from numerai_automl.model_managers.model_manager import ModelManager
 
 
@@ -41,5 +42,15 @@ def test_model_manager3():
 
     print(neutralized_predictions[['target', 'neutralized_predictions_model_target', 'neutralized_predictions_model_target_victor_20']])
 
+    weighted_ensembler = WeightedTargetEnsembler(
+        all_neutralized_prediction_features=["neutralized_predictions_model_target", "neutralized_predictions_model_target_victor_20"],
+        target_name="target",
+        number_of_interations=2,
+        max_number_of_prediction_features_for_ensemble=2,
+        number_of_diffrent_weights_for_ensemble=5
+    )
+
+    print(weighted_ensembler.find_ensemble_prediction_features_and_proportions(neutralized_predictions))
+
 if __name__ == "__main__":
-    test_model_manager()
+    test_model_manager3()

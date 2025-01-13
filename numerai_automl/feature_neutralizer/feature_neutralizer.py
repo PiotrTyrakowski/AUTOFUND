@@ -7,16 +7,16 @@ from numerai_automl.scorer.scorer import Scorer
 
 
 class FeatureNeutralizer:
-    def __init__(self, all_features: List[str], target_name: str = "target", iterations: int=10, max_number_of_features_to_neutralize: int=5, proportions: List[float]=[0.25, 0.5, 0.75, 1.0]):
+    def __init__(self, all_features: List[str], target_name: str = "target", number_of_iterations: int=10, max_number_of_features_to_neutralize: int=5, proportions: List[float]=[0.25, 0.5, 0.75, 1.0]):
         """
         Initializes the FeatureNeutralizer with the given parameters.
 
         :param all_features: List of all feature names in the dataset that is used for training.
-        :param iterations: Number of iterations for feature selection (default is 10).
+        :param number_of_iterations: Number of iterations for feature selection (default is 10).
         :param max_number_of_features_to_neutralize: Maximum number of features to neutralize (default is 6).
         :param proportions: List of proportions to use for neutralization (default is [0.25, 0.5, 0.75, 1.0]).
         """
-        self.iterations = iterations
+        self.iterations = number_of_iterations
         self.all_features = all_features
         self.max_number_of_features_to_neutralize = max_number_of_features_to_neutralize
         self.proportions = proportions
@@ -79,7 +79,7 @@ class FeatureNeutralizer:
             "proportion": 0
         }
 
-        for i in range(1, self.iterations + 1):
+        for i in range(1, self.number_of_iterations + 1):
             number_of_features_to_neutralize = random.randint(1, self.max_number_of_features_to_neutralize)
             features_to_neutralize = random.sample(self.all_features, number_of_features_to_neutralize)
             proportion = random.choice(self.proportions)

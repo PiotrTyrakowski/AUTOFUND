@@ -153,7 +153,7 @@ class TargetEnsembler:
         :param method: type of ensemble method: average, weighted_average, lightgbm, random, None, if None it will create the best ensemble in each category
         :return: dictionary with the best ensemble for each method, if method is not None and Random it will return only the best ensemble for this method
         """
-        if method == "all":
+        if method is None:
             return self._ensemble_all_methods(y_train, y_val, num=self.number_of_interations)
         elif method == "average":
             return {"average": self._find_ensemble_average_type(y_val, num_models=self.number_of_interations)}
