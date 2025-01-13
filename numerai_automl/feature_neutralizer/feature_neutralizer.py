@@ -11,7 +11,7 @@ class FeatureNeutralizer:
         """
         Initializes the FeatureNeutralizer with the given parameters.
 
-        :param all_features: List of all feature names in the dataset.
+        :param all_features: List of all feature names in the dataset that is used for training.
         :param iterations: Number of iterations for feature selection (default is 10).
         :param max_number_of_features_to_neutralize: Maximum number of features to neutralize (default is 6).
         :param proportions: List of proportions to use for neutralization (default is [0.25, 0.5, 0.75, 1.0]).
