@@ -73,29 +73,29 @@ class TargetEnsembler:
             else:
                 raise ValueError(f"Invalid type of ensemble: {self.type_of_ensemble}")
 
-        def predict_based_on_prediction_df(self, predictions: pd.DataFrame) -> pd.Series:
+        def predict_based_on_prediction_df(self, base_model_predictions: pd.DataFrame) -> pd.Series:
             """
             This method predicts the target variable based on df with predictions of the side models, This method is used in finding the best ensemble only
-            :param predictions: df with predictions of the side models and era column
+            :param base_model_predictions: df with predictions of the side models and era column
             :return: pd.Series with predictions of the main target variable
             """
             if self.type_of_ensemble == "average":
                 columns_to_take = list(self.models.keys()) + ["era"]
-                predictions = predictions[columns_to_take]
+                predictions = base_model_predictions[columns_to_take]
                 return pd.Series(predictions.groupby("era").rank(pct=True).mean(axis=1))
             elif self.type_of_ensemble == "weighted_average":
                 columns_to_take = list(self.models.keys()) + ["era"]
-                predictions = predictions[columns_to_take]
+                predictions = base_model_predictions[columns_to_take]
                 return pd.Series(
                     (predictions.groupby("era").rank(pct=True) * self.list_of_weights).sum(axis=1))
             elif self.type_of_ensemble == ("lightgbm" or "linear_regression"):
                 min_max_scaler = MinMaxScaler(feature_range=(0, 1))
-                if "era" not in predictions.columns:
+                if "era" not in base_model_predictions.columns:
                     return pd.Series(
-                        min_max_scaler.fit_transform(self.main_model.predict(predictions)))
+                        min_max_scaler.fit_transform(self.main_model.predict(base_model_predictions)))
                 return pd.Series(
                     min_max_scaler.fit_transform(
-                        self.main_model.predict(predictions.drop(labels=['era'], axis=1)).reshape(-1, 1)
+                        self.main_model.predict(base_model_predictions.drop(labels=['era'], axis=1)).reshape(-1, 1)
                     ).ravel()
                 )
 
@@ -145,7 +145,7 @@ class TargetEnsembler:
         self.scores_of_ensembles = pd.DataFrame(columns=["mean", "std", "sharpe", "max_drawdown"])
 
     def ensemble(self, y_train: pd.DataFrame,
-                 y_val: pd.DataFrame, method: str = None) -> Dict[str, Ensemble]:
+                 y_val: pd.DataFrame, method: str = "all") -> Dict[str, Ensemble]:
         """
         This method creates ensemble based on the given method, if method is None it creates the best ensembles in each category of ensemble methods
         :param y_train: df with target variables of the training data, used to train the meta-model in lightgbm ensemble
@@ -335,7 +335,7 @@ class TargetEnsembler:
             raise ValueError("There are no scores of ensembles.")
         return self.scores_of_ensembles
 
-    def _save_scores_of_ensembles_to_json(self):
+    def save_scores_of_ensembles_to_json(self):
         """
         This method saves the scores of the ensembles to the json file
         """
