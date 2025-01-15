@@ -16,6 +16,9 @@ class DataLoader:
         self.feature_metadata = self._load_feature_metadata()
         self.feature_sets = self.feature_metadata["feature_sets"]
         self.features = self.feature_sets[feature_set]
+
+    def get_features(self):
+        return self.features
    
     def _load_feature_metadata(self) -> dict:
         # Load feature metadata from a JSON file

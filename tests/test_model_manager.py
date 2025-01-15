@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
-from numerai_automl.model_managers.model_manager import ModelManager
+from numerai_automl.model_managers.base_model_manager import ModelManager
 
 
 def test_model_manager():

@@ -13,6 +13,9 @@ class DataManager:
         self.data_downloader = DataDownloader(data_version)
         self.data_saver = DataSaver()
 
+    def get_features(self):
+        return self.data_loader.get_features()
+
 
     # firstly load train data
     def load_train_data_for_base_models(self):

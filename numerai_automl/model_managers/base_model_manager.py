@@ -40,8 +40,8 @@ class BaseModelManager:
 
     def __init__(self, data_version: str = "v5.0", 
                  feature_set: str = "small", 
-                 lightgbm_params: Dict = lightgbm_params,
-                 targets_names_for_base_models: List[str] = target_candidates):
+                 targets_names_for_base_models: List[str] = target_candidates,
+                 lightgbm_params: Dict = lightgbm_params):
         """
         Initialize the ModelManager.
 
@@ -222,7 +222,7 @@ class BaseModelManager:
         with open(f"{self.project_root}/models/neutralization_params/neutralization_params.json", "r") as f:
             self.neutralization_params = json.load(f)
     
-    def create_neutralized_predictions_from_base_models_predictions(self) -> pd.DataFrame:
+    def create_neutralized_predictions_from_by_models_predictions(self) -> pd.DataFrame:
         """
         Apply feature neutralization to the predictions from base models using stored
         neutralization parameters.

@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Union
 import pandas as pd
 import random
 from numerai_automl.scorer.scorer import Scorer
+import cloudpickle
 
 class WeightedTargetEnsembler:
     def __init__(self, 
@@ -158,13 +159,13 @@ class WeightedTargetEnsembler:
         return (X[self.best_ensemble_features_and_weights["neutralized_prediction_features"]] * pd.Series(self.best_ensemble_features_and_weights["weights"])).sum(axis=1)
 
     def save_ensemble_model(self):
+        assert self.best_ensemble_features_and_weights is not None, "The ensemble features and weights are not loaded"
+        
         #save model with pickl
         with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "wb") as f:
-            cloudpickle.dump(self, f)
+            cloudpickle.dump(self.predict, f)
         pass
     
-    def load_ensemble_model(self):
-        pass
     
     def _mean_weights(self, number_of_weights: int) -> List[float]:
         """
