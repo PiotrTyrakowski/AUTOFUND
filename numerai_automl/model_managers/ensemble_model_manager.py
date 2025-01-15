@@ -64,11 +64,24 @@ class EnsembleModelManager:
         self.save_weighted_ensembler_params()
         return weighted_ensembler
     
+    def get_weighted_ensembler_params(self) -> Dict:
+        """
+        Retrieve the current weighted ensembler params.
+        """
+        # assert that the params are not empty
+        assert self.weighted_ensembler_params is not None, "Weighted ensembler params are not found"
+
+        return self.weighted_ensembler_params
+    
     def save_weighted_ensembler_params(self) -> None:
         """
         Save weighted ensembler params to disk in JSON format.
         Parameters are saved in the project's models/ensemble_models/weighted_ensembler directory.
         """
+
+        # assert that the params are not empty
+        assert self.weighted_ensembler_params is not None, "Weighted ensembler params are not found"
+
         with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler_params.json", "w") as f:
             json.dump(self.weighted_ensembler_params, f, indent=4)
 
@@ -79,4 +92,18 @@ class EnsembleModelManager:
         """
         with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler_params.json", "r") as f:
             self.weighted_ensembler_params = json.load(f)
+
+    
+    def save_ensemble_model(self, type: str):
+        if type == "weighted":
+            self.weighted_ensembler.save_ensemble_model()
+        else:
+            raise ValueError(f"Unknown ensemble model type: {type}")
+        
+    def load_ensemble_model(self, type: str):
+        if type == "weighted":
+            return self.weighted_ensembler.load_ensemble_model()
+        else:
+            raise ValueError(f"Unknown ensemble model type: {type}")
+
 

@@ -143,6 +143,7 @@ class WeightedTargetEnsembler:
         with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler_params.json", "r") as f:
             weighted_ensembler_params = json.load(f)
         self.best_ensemble_features_and_weights = weighted_ensembler_params["ensemble_features_and_weights"]
+        return self.best_ensemble_features_and_weights
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
@@ -161,11 +162,14 @@ class WeightedTargetEnsembler:
     def save_ensemble_model(self):
         assert self.best_ensemble_features_and_weights is not None, "The ensemble features and weights are not loaded"
         
-        #save model with pickl
+        # save model with pickl
         with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "wb") as f:
-            cloudpickle.dump(self.predict, f)
-        pass
-    
+            cloudpickle.dump(self, f)
+
+    def load_ensemble_model(self):
+        with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "rb") as f:
+            self = cloudpickle.load(f)
+        return self
     
     def _mean_weights(self, number_of_weights: int) -> List[float]:
         """
