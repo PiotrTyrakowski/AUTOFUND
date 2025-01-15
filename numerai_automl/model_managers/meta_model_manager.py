@@ -49,14 +49,18 @@ class MetaModelManager:
 
         neutralized_predictions = X.copy()
 
+        neutralized_predictions_names = []
+
         for target_name in self.targets_names_for_base_models:
-            base_model_name = f"model_{target_name}"
-            base_model = base_models[base_model_name]
+            base_model = base_models[f"model_{target_name}"]
 
-            preditions_name = f"predictions_{base_model_name}"
+            preditions_name = f"predictions_model_{target_name}"
             neutralized_predictions[preditions_name] = base_model.predict(X)
+            
+            neutralized_predictions_names.append(f"neutralized_predictions_model_{target_name}")
+            neutralized_predictions[f"neutralized_predictions_model_{target_name}"] = self.feature_neutralizer.apply_neutralization(neutralized_predictions, preditions_name, neutralization_params[preditions_name]["neutralization_params"])
 
-            neutralized_predictions[f"neutralized_{preditions_name}"] = self.feature_neutralizer.apply_neutralization(neutralized_predictions, preditions_name, neutralization_params[preditions_name]["neutralization_params"])
+        neutralized_predictions[neutralized_predictions_names] = neutralized_predictions[neutralized_predictions_names].rank(pct=True)
 
         return neutralized_predictions
 

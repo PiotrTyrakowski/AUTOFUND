@@ -161,7 +161,14 @@ class WeightedTargetEnsembler:
         for feature in self.best_ensemble_features_and_weights["neutralized_prediction_features"]:
             assert feature in X.columns, f"The feature {feature} is not in the data"
 
-        return (X[self.best_ensemble_features_and_weights["neutralized_prediction_features"]] * pd.Series(self.best_ensemble_features_and_weights["weights"])).sum(axis=1)
+        weights = pd.Series(
+            self.best_ensemble_features_and_weights["weights"],
+            index=self.best_ensemble_features_and_weights["neutralized_prediction_features"]
+        )
+
+        print(weights)
+
+        return (X[self.best_ensemble_features_and_weights["neutralized_prediction_features"]] * weights).sum(axis=1)
 
     def save_ensemble_model(self):
         assert self.best_ensemble_features_and_weights is not None, "The ensemble features and weights are not loaded"
