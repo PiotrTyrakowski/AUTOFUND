@@ -16,6 +16,8 @@ def test_meta_model_manager():
 
     X = data_manager.load_live_data()
 
+
+    # TODO: THIS FUCNTION SHOULD BNE TOTALY DIFFENT NOW IT RETURNS ONLY PREDICTIONS
     pred = model_manager.create_weighted_meta_model(X)
     print(pred)
 
