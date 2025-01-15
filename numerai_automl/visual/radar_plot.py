@@ -42,7 +42,7 @@ class RadarPlot(AbstractPlot):
             ax.plot(angles, values, label=index)
 
         ax.set_ylim(bottom=df.min().min() - 0.05, top=df.max().max() + 0.05)
-
+        ax.set_yticklabels([])
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(names_of_columns)
         plt.title("Radar Plot", y=1.1)
