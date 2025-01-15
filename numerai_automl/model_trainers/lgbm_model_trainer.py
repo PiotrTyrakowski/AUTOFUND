@@ -3,8 +3,8 @@
 import lightgbm as lgb
 from typing import Dict, List
 import pandas as pd
-
-class ModelTrainer:
+from numerai_automl.model_trainers.abstract_model_trainer import AbstractModelTrainer
+class LGBMModelTrainer(AbstractModelTrainer):
     def __init__(self, params: Dict):
         self.params = params
         self.model = lgb.LGBMRegressor(**self.params)
