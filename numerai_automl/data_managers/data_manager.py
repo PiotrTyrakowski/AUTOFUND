@@ -15,6 +15,9 @@ class DataManager:
 
     def get_features(self):
         return self.data_loader.get_features()
+    
+    def load_live_data(self):
+        return self.data_loader.load_live_data()
 
 
     # firstly load train data
@@ -54,17 +57,18 @@ class DataManager:
         return neutralized_predictions
 
     def _get_min_and_max_era(self, train_data: pd.DataFrame):
-        min_era = train_data["era"].min()
-        max_era = train_data["era"].max()
+        min_era = int(train_data["era"].str.replace('era', '').min())
+        max_era = int(train_data["era"].str.replace('era', '').max())
         return min_era, max_era
     
     def load_train_data_for_ensembler(self):
-        # take all ares in data and take first half of them
+        # take all eras in data and take first half of them
         train_data = self.load_train_data_for_base_models()
-
         min_era, max_era = self._get_min_and_max_era(train_data)
-
-        train_data = train_data[train_data["era"] < (min_era + max_era) / 2]
+        
+        # Compare with era numbers after removing 'era' prefix
+        mid_era = (min_era + max_era) // 2  # Using integer division
+        train_data = train_data[train_data["era"].str.replace('era', '').astype(int) < mid_era]
         return train_data
     
     def load_validation_data_for_ensembler(self):

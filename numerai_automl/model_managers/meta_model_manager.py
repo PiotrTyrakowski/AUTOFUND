@@ -61,15 +61,14 @@ class MetaModelManager:
 
 
 
-    def create_weighted_meta_model(self):
+    def create_weighted_meta_model(self, X: pd.DataFrame):
+        weighted_ensembler = self.ensemble_model_manager.load_ensemble_model("weighted")
 
+        neutralized_predictions = self.create_neutralized_predictions(X)
 
-        def predict(self, X: pd.DataFrame) -> pd.Series:
+        return weighted_ensembler.predict(neutralized_predictions)
 
-            X = self.create_neutralized_predictions(X)
-
-            
-        pass
+        
 
     def save_meta_model(self):
         pass
