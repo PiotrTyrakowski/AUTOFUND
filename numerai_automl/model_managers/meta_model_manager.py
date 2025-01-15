@@ -19,6 +19,14 @@ main_target = MAIN_TARGET
 feature_neutralization_proportions = FEATURE_NEUTRALIZATION_PROPORTIONS
 
 class MetaModelManager:
+    """Manages meta-model operations including prediction neutralization and ensemble weighting.
+    
+    Args:
+        data_version (str): Version of the dataset to use (default: "v5.0")
+        feature_set (str): Feature set size to use (default: "small")
+        targets_names_for_base_models (List[str]): List of target names for base models
+        main_target (str): Main target for predictions
+    """
     def __init__(self, data_version: str = "v5.0", 
                  feature_set: str = "small", 
                  targets_names_for_base_models: List[str] = target_candidates,
@@ -41,7 +49,15 @@ class MetaModelManager:
         self.feature_neutralizer = FeatureNeutralizer(all_features=self.features, target_name=main_target)
 
 
-    def create_neutralized_predictions(self, X: pd.DataFrame):
+    def create_neutralized_predictions(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Creates neutralized predictions using base models and feature neutralization.
+        
+        Args:
+            X (pd.DataFrame): Input features dataframe
+            
+        Returns:
+            pd.DataFrame: DataFrame containing original and neutralized predictions
+        """
         X = X[self.features]
 
         base_models = self.base_model_manager.load_base_models()
@@ -66,7 +82,15 @@ class MetaModelManager:
 
 
 
-    def create_weighted_meta_model(self, X: pd.DataFrame):
+    def create_weighted_meta_model(self, X: pd.DataFrame) -> pd.Series:
+        """Creates weighted ensemble predictions using neutralized base model predictions.
+        
+        Args:
+            X (pd.DataFrame): Input features dataframe
+            
+        Returns:
+            pd.Series: Weighted ensemble predictions
+        """
         weighted_ensembler = self.ensemble_model_manager.load_ensemble_model("weighted")
         neutralized_predictions = self.create_neutralized_predictions(X)
 
@@ -79,7 +103,11 @@ class MetaModelManager:
         
 
     def save_meta_model(self):
+        """Saves the meta model to disk."""
+        # TODO: Implement meta model saving
         pass
 
     def load_meta_model(self):
+        """Loads the meta model from disk."""
+        # TODO: Implement meta model loading
         pass

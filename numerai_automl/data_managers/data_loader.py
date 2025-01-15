@@ -9,7 +9,26 @@ from numerai_automl.config.config import TARGET_CANDIDATES
 target_candidates = TARGET_CANDIDATES
 
 class DataLoader:
+    """
+    A class to load and manage Numerai dataset files.
+    
+    Attributes:
+        data_version (str): Version of the dataset (e.g., "v5.0")
+        feature_set (str): Size of feature set to use (e.g., "medium")
+        project_root (str): Root path of the project
+        feature_metadata (dict): Metadata about features from features.json
+        feature_sets (dict): Available feature sets
+        features (list): Selected features for the current instance
+    """
+
     def __init__(self, data_version: str = "v5.0", feature_set: str = "medium"):
+        """
+        Initialize DataLoader with specified data version and feature set.
+
+        Args:
+            data_version (str): Version of the dataset to use
+            feature_set (str): Size of feature set to use ("small", "medium", "large")
+        """
         # Initialize DataLoader with data version and feature set
         self.data_version = data_version
         self.project_root = get_project_root()
@@ -18,6 +37,12 @@ class DataLoader:
         self.features = self.feature_sets[feature_set]
 
     def get_features(self):
+        """
+        Get the current feature set.
+
+        Returns:
+            list: List of feature names
+        """
         return self.features
    
     def _load_feature_metadata(self) -> dict:
@@ -30,6 +55,17 @@ class DataLoader:
 
     # Load training data with optional downsampling
     def load_train_data(self, target_set: List[str] = [], downsample_step: int = 4, start_era: int = 0) -> pd.DataFrame:
+        """
+        Load training data with optional downsampling.
+
+        Args:
+            target_set (List[str]): List of target columns to load
+            downsample_step (int): Step size for downsampling eras
+            start_era (int): Starting era for downsampling
+
+        Returns:
+            pd.DataFrame: Training dataset
+        """
         filepath = f"{self.project_root}/{self.data_version}/train.parquet"
         
         if not os.path.exists(filepath):
