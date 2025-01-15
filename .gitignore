@@ -17,7 +17,7 @@ numerai_automl/__pycache__/
 numerai_automl/feature_neutralizer/__pycache__/
 numerai_automl/model_managers/__pycache__/
 numerai_automl/ensemblers/__pycache__/
-numerai_automl/model_trainer/__pycache__/
+numerai_automl/model_trainer/__pycache_h/
 numerai_automl/reporter/__pycache__/
 numerai_automl/scorer/__pycache__/
 numerai_automl/data_managers/__pycache__/

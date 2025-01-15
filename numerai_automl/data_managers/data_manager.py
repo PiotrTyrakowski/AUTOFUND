@@ -44,7 +44,6 @@ class DataManager:
         return neutralized_predictions
 
 
-    # TODO: maybe not all predictions but only subset of them change in future.
     def load_validation_data_for_neutralization_of_base_models(self):
         """
         Load validation data for neutralization of base models
@@ -54,6 +53,12 @@ class DataManager:
         - predictions - predictions of base models predictions_model_{target_name}
         """
         return self.data_loader.load_vanila_predictions_data()
+    
+    def load_train_data_for_ensembler(self):
+        return self.load_ranked_neutralized_predictions_for_base_models()
+    
+    def load_validation_data_for_ensembler(self):
+        return self.load_ranked_neutralized_predictions_for_base_models()
 
 
    

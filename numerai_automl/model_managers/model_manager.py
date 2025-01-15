@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import cloudpickle
 from numerai_automl.data_managers.data_manager import DataManager
+from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
 from numerai_automl.feature_neutralizer.feature_neutralizer import FeatureNeutralizer
 from numerai_automl.model_trainer.model_trainer import ModelTrainer
 from numerai_automl.utils.utils import get_project_root
@@ -146,7 +147,7 @@ class ModelManager:
             self,
             metric: str = "mean",
             target_name: str = main_target, 
-            iterations: int = 10, 
+            number_of_iterations: int = 10, 
             max_number_of_features_to_neutralize: int = 5, 
             proportions: List[float] = feature_neutralization_proportions
             ) -> Dict:
@@ -173,7 +174,7 @@ class ModelManager:
         neutralizer = FeatureNeutralizer(
             features_names, 
             target_name, 
-            iterations, 
+            number_of_iterations, 
             max_number_of_features_to_neutralize, 
             proportions
         )
@@ -261,5 +262,50 @@ class ModelManager:
         self.data_manager.save_neutralized_predictions_for_base_models(neutralized_predictions)
 
         return neutralized_predictions
+    
+    def find_weighted_ensemble(
+            self,
+            metric: str = "mean",
+            target_name: str = main_target, 
+            number_of_iterations: int = 10, 
+            max_number_of_prediction_features_for_ensemble: int = 5, 
+            number_of_diffrent_weights_for_ensemble: int = 5
+            ) -> Dict:
+        """
+        Find the best weighted ensemble for the neutralized predictions.
+        """
+
+        all_neutralized_prediction_features = [f"neutralized_predictions_model_{target_name}" for target_name in self.targets_names_for_base_models]
+
+        train_data = self.data_manager.load_train_data_for_ensembler()
+        
+        weighted_ensembler = WeightedTargetEnsembler(
+            all_neutralized_prediction_features=all_neutralized_prediction_features,
+            target_name=target_name,
+            number_of_interations=number_of_iterations,
+            max_number_of_prediction_features_for_ensemble=max_number_of_prediction_features_for_ensemble,
+            number_of_diffrent_weights_for_ensemble=number_of_diffrent_weights_for_ensemble
+        )
+
+        self.weighted_ensembler_params = weighted_ensembler.find_ensemble_prediction_features_and_proportions(train_data, metric)
+        self.save_weighted_ensembler_params()
+        return weighted_ensembler
+    
+    def save_weighted_ensembler_params(self) -> None:
+        """
+        Save weighted ensembler params to disk in JSON format.
+        Parameters are saved in the project's models/weighted_ensembler_params directory.
+        """
+        with open(f"{self.project_root}/models/weighted_ensembler_params/weighted_ensembler_params.json", "w") as f:
+            json.dump(self.weighted_ensembler_params, f, indent=4)
+
+    def load_weighted_ensembler_params(self) -> None:
+        """
+        Load previously saved weighted ensembler params from disk.
+        Parameters are loaded from the project's models/weighted_ensembler_params directory.
+        """
+        with open(f"{self.project_root}/models/weighted_ensembler_params/weighted_ensembler_params.json", "r") as f:
+            self.weighted_ensembler_params = json.load(f)
+
 
 

@@ -16,7 +16,7 @@ class FeatureNeutralizer:
         :param max_number_of_features_to_neutralize: Maximum number of features to neutralize (default is 6).
         :param proportions: List of proportions to use for neutralization (default is [0.25, 0.5, 0.75, 1.0]).
         """
-        self.iterations = number_of_iterations
+        self.number_of_iterations = number_of_iterations
         self.all_features = all_features
         self.max_number_of_features_to_neutralize = max_number_of_features_to_neutralize
         self.proportions = proportions

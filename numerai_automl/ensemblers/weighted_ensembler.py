@@ -24,7 +24,7 @@ class WeightedTargetEnsembler:
         self.scorer = Scorer()
         self.all_neutralized_prediction_features = all_neutralized_prediction_features
         self.target_name = target_name
-        self.neutralized_predictions_model_target = "neutralized_predictions_model_target"
+        self.neutralized_predictions_model_target = f"neutralized_predictions_model_{target_name}"
         self.number_of_interations = number_of_interations
         self.max_number_of_prediction_features_for_ensemble = max_number_of_prediction_features_for_ensemble
         self.number_of_diffrent_weights_for_ensemble = number_of_diffrent_weights_for_ensemble
@@ -57,7 +57,7 @@ class WeightedTargetEnsembler:
                         "mean": 0.025,
                         "sharpe": 1.5, 
                         "std": 0.015,
-                        "max_drawdown": -0.1
+                        "max_drawdown": 0.1
                     }
                 }
         """
@@ -80,9 +80,9 @@ class WeightedTargetEnsembler:
 
         validation_data = validation_data[self.all_neutralized_prediction_features + ["era", self.target_name]]
 
-        neutralized_prediction_features_and_weights = {}
+        ensemble_features_and_weights = {}
 
-        neutralized_prediction_features_and_weights[f"ensemble_predictions_{0}"] = {
+        ensemble_features_and_weights[f"ensemble_predictions_{0}"] = {
             "neutralized_prediction_features": [self.neutralized_predictions_model_target],
             "weights": [1]
         }
@@ -93,6 +93,7 @@ class WeightedTargetEnsembler:
         prediction_features_without_main_prediction = self.all_neutralized_prediction_features.copy()
         prediction_features_without_main_prediction.remove(self.neutralized_predictions_model_target)
 
+
         for i in range(self.number_of_interations):
             number_of_prediction_features_for_ensemble = random.randint(1, self.max_number_of_prediction_features_for_ensemble - 1)
             prediction_features_for_ensemble = random.sample(prediction_features_without_main_prediction, number_of_prediction_features_for_ensemble)
@@ -102,9 +103,9 @@ class WeightedTargetEnsembler:
             weights_series = pd.Series(weights_for_ensemble, index=prediction_features_for_ensemble)
             ensemble_predictions_df[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble}"] = (validation_data[prediction_features_for_ensemble] * weights_series).sum(axis=1)
             
-            neutralized_prediction_features_and_weights[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble}"] = {
+            ensemble_features_and_weights[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble}"] = {
                 "neutralized_prediction_features": prediction_features_for_ensemble,
-                "weights": weights_series
+                "weights": weights_for_ensemble
             }
             
             for j in range(1, self.number_of_diffrent_weights_for_ensemble):
@@ -112,14 +113,12 @@ class WeightedTargetEnsembler:
                 weights_series = pd.Series(weights_for_ensemble, index=prediction_features_for_ensemble)
                 ensemble_predictions_df[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble + j}"] = (validation_data[prediction_features_for_ensemble] * weights_series).sum(axis=1)
                 
-                neutralized_prediction_features_and_weights[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble + j}"] = {
+                ensemble_features_and_weights[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble + j}"] = {
                     "neutralized_prediction_features": prediction_features_for_ensemble,
-                    "weights": weights_series
+                    "weights": weights_for_ensemble
                 }
 
         scores = self.scorer.compute_scores(ensemble_predictions_df, self.target_name)
-
-        print(scores)
 
         if metric == "mean" or metric == "sharpe":
             scores = scores.sort_values(by=metric, ascending=False)
@@ -127,7 +126,7 @@ class WeightedTargetEnsembler:
             scores = scores.sort_values(by=metric, ascending=True)
 
         best_prediction_column = scores.index[0]
-        best_neutralization_params = neutralized_prediction_features_and_weights[best_prediction_column]
+        best_neutralization_params = ensemble_features_and_weights[best_prediction_column]
         best_scores = scores.loc[best_prediction_column].to_dict()
 
         return {
