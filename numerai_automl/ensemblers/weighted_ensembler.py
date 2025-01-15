@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Union
 import pandas as pd
 import random
@@ -28,11 +29,12 @@ class WeightedTargetEnsembler:
         self.number_of_interations = number_of_interations
         self.max_number_of_prediction_features_for_ensemble = max_number_of_prediction_features_for_ensemble
         self.number_of_diffrent_weights_for_ensemble = number_of_diffrent_weights_for_ensemble
+        self.best_ensemble_features_and_weights = None
 
         assert self.max_number_of_prediction_features_for_ensemble <= len(self.all_neutralized_prediction_features), "The max number of prediction features for ensemble is greater than the number of all neutralized prediction features"
 
     
-    def find_ensemble_prediction_features_and_proportions(self, validation_data: pd.DataFrame, metric: str="mean") -> Dict[str, Union[Dict, Dict]]:
+    def find_ensemble_prediction_features_and_proportions(self, train_data: pd.DataFrame, metric: str="mean") -> Dict[str, Union[Dict, Dict]]:
         """
         Find optimal combination of prediction features and their weights for ensemble.
         
@@ -65,20 +67,20 @@ class WeightedTargetEnsembler:
         # check if metric is valid  
         assert metric in ["mean", "std", "sharpe", "max_drawdown"], "The metric is not valid"
 
-        # check if neutralized_predictions_model_target is in the validation_data
-        assert self.neutralized_predictions_model_target in validation_data.columns, f"The feature {self.neutralized_predictions_model_target} is not in the validation data"
+        # check if neutralized_predictions_model_target is in the train_data
+        assert self.neutralized_predictions_model_target in train_data.columns, f"The feature {self.neutralized_predictions_model_target} is not in the validation data"
 
-        # check if all_neutralized_prediction_features are in the validation_data
+        # check if all_neutralized_prediction_features are in the train_data
         for feature in self.all_neutralized_prediction_features:
-            assert feature in validation_data.columns, f"The feature {feature} is not in the validation data"
+            assert feature in train_data.columns, f"The feature {feature} is not in the validation data"
 
-        # check if era is in the validation_data
-        assert "era" in validation_data.columns, "The validation data does not have an era column"
+        # check if era is in the train_data
+        assert "era" in train_data.columns, "The validation data does not have an era column"
 
         # check if target_name is in the validation_data
-        assert self.target_name in validation_data.columns, f"The target {self.target_name} is not in the validation data"
+        assert self.target_name in train_data.columns, f"The target {self.target_name} is not in the validation data"
 
-        validation_data = validation_data[self.all_neutralized_prediction_features + ["era", self.target_name]]
+        train_data = train_data[self.all_neutralized_prediction_features + ["era", self.target_name]]
 
         ensemble_features_and_weights = {}
 
@@ -87,8 +89,8 @@ class WeightedTargetEnsembler:
             "weights": [1]
         }
 
-        ensemble_predictions_df = validation_data[["era", self.target_name]].copy()
-        ensemble_predictions_df[f"ensemble_predictions_{0}"] = validation_data[self.neutralized_predictions_model_target]
+        ensemble_predictions_df = train_data[["era", self.target_name]].copy()
+        ensemble_predictions_df[f"ensemble_predictions_{0}"] = train_data[self.neutralized_predictions_model_target]
 
         prediction_features_without_main_prediction = self.all_neutralized_prediction_features.copy()
         prediction_features_without_main_prediction.remove(self.neutralized_predictions_model_target)
@@ -101,7 +103,7 @@ class WeightedTargetEnsembler:
 
             weights_for_ensemble = self._mean_weights(len(prediction_features_for_ensemble))
             weights_series = pd.Series(weights_for_ensemble, index=prediction_features_for_ensemble)
-            ensemble_predictions_df[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble}"] = (validation_data[prediction_features_for_ensemble] * weights_series).sum(axis=1)
+            ensemble_predictions_df[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble}"] = (train_data[prediction_features_for_ensemble] * weights_series).sum(axis=1)
             
             ensemble_features_and_weights[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble}"] = {
                 "neutralized_prediction_features": prediction_features_for_ensemble,
@@ -111,7 +113,7 @@ class WeightedTargetEnsembler:
             for j in range(1, self.number_of_diffrent_weights_for_ensemble):
                 weights_for_ensemble = self._random_weights(len(prediction_features_for_ensemble))
                 weights_series = pd.Series(weights_for_ensemble, index=prediction_features_for_ensemble)
-                ensemble_predictions_df[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble + j}"] = (validation_data[prediction_features_for_ensemble] * weights_series).sum(axis=1)
+                ensemble_predictions_df[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble + j}"] = (train_data[prediction_features_for_ensemble] * weights_series).sum(axis=1)
                 
                 ensemble_features_and_weights[f"ensemble_predictions_{1 + i * self.number_of_diffrent_weights_for_ensemble + j}"] = {
                     "neutralized_prediction_features": prediction_features_for_ensemble,
@@ -126,15 +128,43 @@ class WeightedTargetEnsembler:
             scores = scores.sort_values(by=metric, ascending=True)
 
         best_prediction_column = scores.index[0]
-        best_neutralization_params = ensemble_features_and_weights[best_prediction_column]
+        best_ensemble_features_and_weights = ensemble_features_and_weights[best_prediction_column]
         best_scores = scores.loc[best_prediction_column].to_dict()
 
+        self.best_ensemble_features_and_weights = best_ensemble_features_and_weights
+
         return {
-            "neutralization_params": best_neutralization_params,
+            "ensemble_features_and_weights": best_ensemble_features_and_weights,
             "scores": best_scores
         }
+    
+    def load_ensemble_features_and_weights(self):
+        with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler_params.json", "r") as f:
+            weighted_ensembler_params = json.load(f)
+        self.best_ensemble_features_and_weights = weighted_ensembler_params["ensemble_features_and_weights"]
 
+    def predict(self, X: pd.DataFrame) -> pd.Series:
+        """
+        Get the ensemble prediction for the train data
+        """
 
+        assert self.best_ensemble_features_and_weights is not None, "The ensemble features and weights are not loaded"
+        assert "neutralized_prediction_features" in self.best_ensemble_features_and_weights, "The ensemble features and weights do not contain neutralized_prediction_features"
+        assert "weights" in self.best_ensemble_features_and_weights, "The ensemble features and weights do not contain weights"
+
+        for feature in self.best_ensemble_features_and_weights["neutralized_prediction_features"]:
+            assert feature in X.columns, f"The feature {feature} is not in the data"
+
+        return (X[self.best_ensemble_features_and_weights["neutralized_prediction_features"]] * pd.Series(self.best_ensemble_features_and_weights["weights"])).sum(axis=1)
+
+    def save_ensemble_model(self):
+        #save model with pickl
+        with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "wb") as f:
+            cloudpickle.dump(self, f)
+        pass
+    
+    def load_ensemble_model(self):
+        pass
     
     def _mean_weights(self, number_of_weights: int) -> List[float]:
         """
