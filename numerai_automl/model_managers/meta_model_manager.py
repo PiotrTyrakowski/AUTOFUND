@@ -44,18 +44,19 @@ class MetaModelManager:
     def create_neutralized_predictions(self, X: pd.DataFrame):
         X = X[self.features]
 
-        self.base_model_manager.load_base_models()
-        base_models = self.base_model_manager.get_base_models()
+        base_models = self.base_model_manager.load_base_models()
+        neutralization_params = self.base_model_manager.load_neutralization_params()
 
         neutralized_predictions = X.copy()
 
         for target_name in self.targets_names_for_base_models:
-            base_model = base_models[target_name]
-            preditions_name = f"predictions_{target_name}"
+            base_model_name = f"model_{target_name}"
+            base_model = base_models[base_model_name]
+
+            preditions_name = f"predictions_{base_model_name}"
             neutralized_predictions[preditions_name] = base_model.predict(X)
 
-            # here prediction will get renamed to f"neutralized_{preditions_name}"
-            neutralized_predictions = self.feature_neutralizer.neutralize_predictions(neutralized_predictions, preditions_name)
+            neutralized_predictions[f"neutralized_{preditions_name}"] = self.feature_neutralizer.apply_neutralization(neutralized_predictions, preditions_name, neutralization_params[preditions_name]["neutralization_params"])
 
         return neutralized_predictions
 
@@ -63,9 +64,12 @@ class MetaModelManager:
 
     def create_weighted_meta_model(self, X: pd.DataFrame):
         weighted_ensembler = self.ensemble_model_manager.load_ensemble_model("weighted")
-
         neutralized_predictions = self.create_neutralized_predictions(X)
 
+        print(neutralized_predictions.columns)
+
+        # print(X.columns)
+        # print(weighted_ensembler.best_ensemble_features_and_weights)
         return weighted_ensembler.predict(neutralized_predictions)
 
         

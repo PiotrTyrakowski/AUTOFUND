@@ -60,7 +60,8 @@ class EnsembleModelManager:
             number_of_diffrent_weights_for_ensemble=number_of_diffrent_weights_for_ensemble
         )
         self.weighted_ensembler_params = weighted_ensembler.find_ensemble_prediction_features_and_proportions(train_data, metric)
-               
+        self.weighted_ensembler = weighted_ensembler
+        
         self.save_ensemble_model("weighted")
         return weighted_ensembler
     
@@ -102,8 +103,7 @@ class EnsembleModelManager:
         
     def load_ensemble_model(self, type: str):
         if type == "weighted":
-            weighted_ensembler = WeightedTargetEnsembler()
-            weighted_ensembler.load_ensemble_model()
+            weighted_ensembler = WeightedTargetEnsembler.load_ensemble_model()
             return weighted_ensembler
         else:
             raise ValueError(f"Unknown ensemble model type: {type}")

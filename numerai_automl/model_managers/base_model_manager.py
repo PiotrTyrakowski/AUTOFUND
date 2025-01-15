@@ -115,6 +115,8 @@ class BaseModelManager:
             with open(model_path, "rb") as f:
                 self.base_models[f"model_{target}"] = cloudpickle.load(f)
 
+        return self.base_models
+
     def get_base_models(self) -> Dict:
         """
         Retrieve the dictionary of trained base models.
@@ -221,6 +223,8 @@ class BaseModelManager:
         """
         with open(f"{self.project_root}/models/neutralization_params/neutralization_params.json", "r") as f:
             self.neutralization_params = json.load(f)
+
+        return self.neutralization_params
     
     def create_neutralized_predictions_from_by_models_predictions(self) -> pd.DataFrame:
         """

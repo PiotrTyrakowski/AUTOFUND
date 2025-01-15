@@ -4,10 +4,10 @@ import pandas as pd
 import random
 from numerai_automl.scorer.scorer import Scorer
 import cloudpickle
-
+from numerai_automl.utils.utils import get_project_root
 class WeightedTargetEnsembler:
     def __init__(self, 
-                 all_neutralized_prediction_features: List[str],
+                 all_neutralized_prediction_features: List[str] = [],
                  target_name: str = 'target',
                  number_of_interations: int = 30,
                  max_number_of_prediction_features_for_ensemble: int = 5,
@@ -31,8 +31,11 @@ class WeightedTargetEnsembler:
         self.max_number_of_prediction_features_for_ensemble = max_number_of_prediction_features_for_ensemble
         self.number_of_diffrent_weights_for_ensemble = number_of_diffrent_weights_for_ensemble
         self.best_ensemble_features_and_weights = None
+        self.project_root = get_project_root()
+        self.best_ensemble_features_and_weights = {}
 
-        assert self.max_number_of_prediction_features_for_ensemble <= len(self.all_neutralized_prediction_features), "The max number of prediction features for ensemble is greater than the number of all neutralized prediction features"
+        if all_neutralized_prediction_features != []:
+            assert self.max_number_of_prediction_features_for_ensemble <= len(self.all_neutralized_prediction_features), "The max number of prediction features for ensemble is greater than the number of all neutralized prediction features"
 
     
     def find_ensemble_prediction_features_and_proportions(self, train_data: pd.DataFrame, metric: str="mean") -> Dict[str, Union[Dict, Dict]]:
@@ -150,6 +153,7 @@ class WeightedTargetEnsembler:
         Get the ensemble prediction for the train data
         """
 
+
         assert self.best_ensemble_features_and_weights is not None, "The ensemble features and weights are not loaded"
         assert "neutralized_prediction_features" in self.best_ensemble_features_and_weights, "The ensemble features and weights do not contain neutralized_prediction_features"
         assert "weights" in self.best_ensemble_features_and_weights, "The ensemble features and weights do not contain weights"
@@ -166,11 +170,13 @@ class WeightedTargetEnsembler:
         with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "wb") as f:
             cloudpickle.dump(self, f)
 
-    def load_ensemble_model(self):
-        with open(f"{self.project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "rb") as f:
-            self = cloudpickle.load(f)
-        return self
-    
+    @classmethod
+    def load_ensemble_model(cls):
+        project_root = get_project_root()
+        with open(f"{project_root}/models/ensemble_models/weighted_ensembler/weighted_ensembler.pkl", "rb") as f:
+            loaded_instance = cloudpickle.load(f)
+            return loaded_instance
+
     def _mean_weights(self, number_of_weights: int) -> List[float]:
         """
         Generate equally distributed weights that sum to 1.

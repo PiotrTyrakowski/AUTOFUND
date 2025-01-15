@@ -63,7 +63,7 @@ class DataManager:
     
     def load_train_data_for_ensembler(self):
         # take all eras in data and take first half of them
-        train_data = self.load_train_data_for_base_models()
+        train_data = self.load_ranked_neutralized_predictions_by_base_models()
         min_era, max_era = self._get_min_and_max_era(train_data)
         
         # Compare with era numbers after removing 'era' prefix
@@ -72,7 +72,7 @@ class DataManager:
         return train_data
     
     def load_validation_data_for_ensembler(self):
-        validation_data = self.load_data_for_creating_predictions_for_base_models()
+        validation_data = self.load_ranked_neutralized_predictions_by_base_models()
 
         min_era, max_era = self._get_min_and_max_era(validation_data)
 

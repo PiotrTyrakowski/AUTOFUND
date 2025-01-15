@@ -128,6 +128,8 @@ class FeatureNeutralizer:
         :param neutralization_params: Dictionary with features_to_neutralize and proportion
         :return: A DataFrame with neutralized predictions
         """
+
+      
         
         if "era" in data.columns:
             neutralized_predictions = data.groupby("era", group_keys=True).apply(

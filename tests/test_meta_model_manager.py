@@ -15,7 +15,9 @@ def test_meta_model_manager():
     data_manager = DataManager(data_version="v5.0", feature_set="small")    
 
     X = data_manager.load_live_data()
-    print(X)
+
+    pred = model_manager.create_weighted_meta_model(X)
+    print(pred)
 
 
     
