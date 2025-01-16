@@ -11,7 +11,8 @@ models/*
 predictions/*
 !predictions/.gitkeep
 
-
+test_folder_git/*
+!test_folder_git/.gitkeep
 
 __pycache__/
 numerai_automl/__pycache__/
