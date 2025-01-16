@@ -140,7 +140,8 @@ def test_pipeline3():
     predictor_lgbm = meta_manager.load_predictor("lgbm")
 
     # this will be end validation data that we will do scoring plots etc staff like that.
-    X = data_loader.load_validation_data()
+    # X = data_loader.load_validation_data() # this i only checked to see comparison with notebooks
+    X = data_manager.load_validation_data_for_ensembler()
     print(len(X.columns))
 
     features = data_manager.get_features()
