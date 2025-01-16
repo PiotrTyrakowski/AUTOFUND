@@ -1,19 +1,33 @@
 .venv/
 .idea/
 
+# Numerai data
 v5.0/
+
+# Numerai data in notebooks
 notebooks/v5.0/
 
-
-models/*
-!models/.gitkeep
+# Base Models
+models/base_models/*
 !models/base_models/.gitkeep
+
+# Neutralization Params
+models/neutralization_params/*
+!models/neutralization_params/.gitkeep
+
+# Ensemble Models
+models/ensemble_models/weighted_ensembler/*
+!models/ensemble_models/weighted_ensembler/.gitkeep
+
+# Meta Models
+models/meta_models/weighted_meta_model/*
+!models/meta_models/weighted_meta_model/.gitkeep
+
+# Predictions
 predictions/*
 !predictions/.gitkeep
 
-test_folder_git2/*
-!test_folder_git2/.gitkeep
-
+# Pycache
 __pycache__/
 numerai_automl/__pycache__/
 numerai_automl/feature_neutralizer/__pycache__/
