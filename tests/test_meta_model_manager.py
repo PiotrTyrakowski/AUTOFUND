@@ -15,11 +15,16 @@ def test_meta_model_manager():
     data_manager = DataManager(data_version="v5.0", feature_set="small")    
 
     X = data_manager.load_live_data()
+    X = data_manager.load_train_data_for_base_models()
 
 
     # TODO: THIS FUCNTION SHOULD BNE TOTALY DIFFENT NOW IT RETURNS ONLY PREDICTIONS
-    pred = model_manager.create_weighted_meta_model(X)
-    print(pred)
+    pred = model_manager.create_weighted_meta_model_predictions(X)
+
+    model_manager.save_meta_model("weighted")
+
+    func = model_manager.load_meta_model("weighted")
+    print(func(X))
 
 
     

@@ -166,8 +166,6 @@ class WeightedTargetEnsembler:
             index=self.best_ensemble_features_and_weights["neutralized_prediction_features"]
         )
 
-        print(weights)
-
         return (X[self.best_ensemble_features_and_weights["neutralized_prediction_features"]] * weights).sum(axis=1)
 
     def save_ensemble_model(self):

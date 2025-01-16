@@ -47,7 +47,7 @@ class MetaModelManager:
             targets_names_for_base_models=targets_names_for_base_models
         )
         self.feature_neutralizer = FeatureNeutralizer(all_features=self.features, target_name=main_target)
-
+        self.project_root = get_project_root()
 
     def create_neutralized_predictions(self, X: pd.DataFrame) -> pd.DataFrame:
         """Creates neutralized predictions using base models and feature neutralization.
@@ -58,12 +58,18 @@ class MetaModelManager:
         Returns:
             pd.DataFrame: DataFrame containing original and neutralized predictions
         """
+
+        if "era" in X.columns:
+            neutralized_predictions = X[self.features + ["era"]].copy()
+        else:
+            neutralized_predictions = X[self.features].copy()
+
         X = X[self.features]
 
         base_models = self.base_model_manager.load_base_models()
         neutralization_params = self.base_model_manager.load_neutralization_params()
 
-        neutralized_predictions = X.copy()
+        
 
         neutralized_predictions_names = []
 
@@ -71,18 +77,25 @@ class MetaModelManager:
             base_model = base_models[f"model_{target_name}"]
 
             preditions_name = f"predictions_model_{target_name}"
+
+
             neutralized_predictions[preditions_name] = base_model.predict(X)
+
             
             neutralized_predictions_names.append(f"neutralized_predictions_model_{target_name}")
-            neutralized_predictions[f"neutralized_predictions_model_{target_name}"] = self.feature_neutralizer.apply_neutralization(neutralized_predictions, preditions_name, neutralization_params[preditions_name]["neutralization_params"])
+            neutralized_predictions[f"neutralized_predictions_model_{target_name}"] = self.feature_neutralizer.apply_neutralization(neutralized_predictions, preditions_name, neutralization_params[preditions_name]["neutralization_params"])[f"neutralized_predictions_model_{target_name}"]
 
-        neutralized_predictions[neutralized_predictions_names] = neutralized_predictions[neutralized_predictions_names].rank(pct=True)
+        if "era" in neutralized_predictions.columns:
+            neutralized_predictions[neutralized_predictions_names] = neutralized_predictions[neutralized_predictions_names + ["era"]].groupby("era", group_keys=True).rank(pct=True)
+        else:
+            neutralized_predictions[neutralized_predictions_names] = neutralized_predictions[neutralized_predictions_names].rank(pct=True)
+
 
         return neutralized_predictions
 
 
 
-    def create_weighted_meta_model(self, X: pd.DataFrame) -> pd.Series:
+    def create_weighted_meta_model_predictions(self, X: pd.DataFrame) -> pd.Series:
         """Creates weighted ensemble predictions using neutralized base model predictions.
         
         Args:
@@ -94,20 +107,25 @@ class MetaModelManager:
         weighted_ensembler = self.ensemble_model_manager.load_ensemble_model("weighted")
         neutralized_predictions = self.create_neutralized_predictions(X)
 
-        print(neutralized_predictions.columns)
-
-        # print(X.columns)
-        # print(weighted_ensembler.best_ensemble_features_and_weights)
         return weighted_ensembler.predict(neutralized_predictions)
 
         
 
-    def save_meta_model(self):
+    def save_meta_model(self, type: str):
         """Saves the meta model to disk."""
-        # TODO: Implement meta model saving
-        pass
 
-    def load_meta_model(self):
+        if type == "weighted":
+            predictions = self.create_weighted_meta_model_predictions
+            # save model with pickl
+            with open(f"{self.project_root}/models/meta_models/weighted_meta_model/weighted_meta_model.pkl", "wb") as f:
+                cloudpickle.dump(predictions, f)
+
+        
+
+    def load_meta_model(self, type: str):
         """Loads the meta model from disk."""
-        # TODO: Implement meta model loading
-        pass
+        if type == "weighted":
+            with open(f"{self.project_root}/models/meta_models/weighted_meta_model/weighted_meta_model.pkl", "rb") as f:
+                return cloudpickle.load(f)
+        else:
+            raise ValueError(f"Meta model type {type} not found")
