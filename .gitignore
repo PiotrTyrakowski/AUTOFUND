@@ -7,6 +7,7 @@ notebooks/v5.0/
 
 models/*
 !models/.gitkeep
+!models/base_models/.gitkeep
 predictions/*
 !predictions/.gitkeep
 
