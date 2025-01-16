@@ -61,4 +61,27 @@ class Scorer:
         summary = pd.DataFrame(target_summary_metrics).T
 
         return summary
-    
+
+    def compute_cumsum_correlation_per_era(self, data: pd.DataFrame, target_name: str = 'target') -> pd.DataFrame:
+        """
+        Computes the cumulative sum of correlations per era for each model.
+
+        Parameters:
+        - data (pd.DataFrame): A DataFrame containing the following columns:
+            - 'era': The era of the data.
+            - 'predictions': The predicted values.
+            - 'target': The actual target values.
+        - target_name (str): The name of the target column.
+
+        Returns:
+        - pd.DataFrame: A DataFrame with the cumulative sum of correlations per era for each model.
+        """
+
+        prediction_cols = [col for col in data.columns if "prediction" in col]
+
+        correlations = data.groupby("era").apply(
+            lambda d: numerai_corr(d[prediction_cols], d[target_name])
+        )
+        cumsum_corrs = correlations.cumsum()
+
+        return cumsum_corrs
