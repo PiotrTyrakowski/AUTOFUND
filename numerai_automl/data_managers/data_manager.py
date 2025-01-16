@@ -110,7 +110,11 @@ class DataManager:
         """
         validation_data = self.load_ranked_neutralized_predictions_by_base_models()
         min_era, max_era = self._get_min_and_max_era(validation_data)
-        validation_data = validation_data[validation_data["era"] >= (min_era + max_era) / 2]
+
+        mid_era = (min_era + max_era) // 2
+        validation_data = validation_data[validation_data["era"].str.replace('era', '').astype(int) >= mid_era]
+       
+       
         return validation_data
 
 

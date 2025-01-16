@@ -105,7 +105,19 @@ class MetaModelManager:
         lgbm_ensembler = self.ensemble_model_manager.load_ensemble_model("lgbm")
         neutralized_predictions = self.create_neutralized_predictions(X)
 
-        return lgbm_ensembler.predict(neutralized_predictions)
+        names = [f"neutralized_predictions_model_{target_name}" for target_name in self.targets_names_for_base_models]
+
+        meta_predictions = lgbm_ensembler.predict(neutralized_predictions[names])
+        
+        if "era" in X.columns:
+            predictions = neutralized_predictions[["era"]].copy()
+            predictions["meta_predictions"] = meta_predictions
+            predictions = predictions.groupby("era", group_keys=True).rank(pct=True)
+        else:
+            predictions = pd.Series(meta_predictions).rank(pct=True)
+
+        
+        return predictions
 
         
 
