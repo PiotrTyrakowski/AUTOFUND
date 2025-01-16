@@ -3,6 +3,7 @@ from numerai_automl.data_managers import data_manager
 from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
 from numerai_automl.model_managers.meta_model_manager import MetaModelManager
 from numerai_automl.data_managers.data_manager import DataManager
+from numerai_automl.scorer.scorer import Scorer
 
 
 def test_meta_model_manager():
@@ -24,7 +25,11 @@ def test_meta_model_manager():
     # model_manager.save_predictor("weighted")
 
     func = model_manager.load_predictor("weighted")
-    print(func(X))
+
+    preds = func(X)
+    print(preds)
+
+    return preds
 
 def test_meta_model_manager2():
 
@@ -46,11 +51,32 @@ def test_meta_model_manager2():
 
 
     func = model_manager.load_predictor("lgbm")
-    print(func(X))
+
+    preds = func(X)
+    print(preds)
+
+    return preds
 
 
     
 if __name__ == "__main__":
-    test_meta_model_manager2()
+    preds1 = test_meta_model_manager()
+    preds2 = test_meta_model_manager2()
+
+
+    data_manager = DataManager(data_version="v5.0", feature_set="small")  
+    X = data_manager.load_validation_data_for_ensembler()
+
+    X["meta_weighted_predictions"] = preds1
+    X["meta_lgbm_predictions"] = preds2
+
+    scorer = Scorer()
+
+    scores = scorer.compute_scores(X, "target")
+
+    print(scores)
+
+    print(X.head())
+
 
 
