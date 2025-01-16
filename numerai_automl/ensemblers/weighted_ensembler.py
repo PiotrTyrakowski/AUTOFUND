@@ -136,7 +136,8 @@ class WeightedTargetEnsembler:
         best_scores = scores.loc[best_prediction_column].to_dict()
 
         self.best_ensemble_features_and_weights = best_ensemble_features_and_weights
-
+        
+        self.save_ensemble_model()
         return {
             "ensemble_features_and_weights": best_ensemble_features_and_weights,
             "scores": best_scores
@@ -165,8 +166,6 @@ class WeightedTargetEnsembler:
             self.best_ensemble_features_and_weights["weights"],
             index=self.best_ensemble_features_and_weights["neutralized_prediction_features"]
         )
-
-        print(weights)
 
         return (X[self.best_ensemble_features_and_weights["neutralized_prediction_features"]] * weights).sum(axis=1)
 

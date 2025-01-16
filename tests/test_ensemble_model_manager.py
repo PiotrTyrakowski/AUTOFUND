@@ -16,9 +16,17 @@ def test_ensemble_model_manager():
 
     model_manager.find_weighted_ensemble(max_number_of_prediction_features_for_ensemble=2)
 
+    model_manager.find_lgbm_ensemble(max_number_of_prediction_features_for_ensemble=2)
+
+def test_ensemble_model_manager2():
+    model_manager = EnsembleModelManager(
+        targets_names_for_base_models=["target", "target_victor_20"],
+        )
+
+    model_manager.find_lgbm_ensemble()
 
     
 if __name__ == "__main__":
-    test_ensemble_model_manager()
+    test_ensemble_model_manager2()
 
 
