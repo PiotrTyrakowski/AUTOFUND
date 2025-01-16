@@ -1,10 +1,10 @@
 from matplotlib import pyplot as plt
 from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
-from numerai_automl.model_managers.base_model_manager import ModelManager
+from numerai_automl.model_managers.base_model_manager import BaseModelManager
 
 
 def test_model_manager():
-    model_manager = ModelManager(
+    model_manager = BaseModelManager(
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     model_manager.train_base_models()
@@ -16,7 +16,7 @@ def test_model_manager():
     print(neutralized_predictions)
 
 def test_model_manager2():
-    model_manager = ModelManager(
+    model_manager = BaseModelManager(
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     model_manager.load_base_models()
@@ -29,7 +29,7 @@ def test_model_manager2():
 
 
 def test_model_manager3():
-    model_manager = ModelManager(
+    model_manager = BaseModelManager(
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     model_manager.load_base_models()

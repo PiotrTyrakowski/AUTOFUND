@@ -38,7 +38,7 @@ class DataManager:
         """Load validation data for generating base model predictions."""
         return self.data_loader.load_validation_data()
     
-    def save_vanila_predictions_for_base_models(self, predictions: pd.DataFrame):
+    def save_vanila_predictions_by_base_models(self, predictions: pd.DataFrame):
         """Save raw predictions from base models before neutralization.
         
         Args:
