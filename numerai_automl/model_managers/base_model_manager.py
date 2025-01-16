@@ -99,8 +99,8 @@ class BaseModelManager:
         if self.base_models is None:
             raise Exception("Models do not exist")
         
-        for target, model in self.base_models.items():
-            model_path = f"{self.project_root}/models/base_models/model_{target}.pkl"
+        for model_name, model in self.base_models.items():
+            model_path = f"{self.project_root}/models/base_models/{model_name}.pkl"
             with open(model_path, "wb") as f:
                 cloudpickle.dump(model, f)
 
@@ -141,7 +141,7 @@ class BaseModelManager:
             predictions = self.base_models[f"model_{target}"].predict(data_for_creating_predictions[features_names])
             data_for_creating_predictions[f"predictions_model_{target}"] = predictions
 
-        self.data_manager.save_predictions_for_base_models(data_for_creating_predictions)
+        self.data_manager.save_vanila_predictions_by_base_models(data_for_creating_predictions)
         return data_for_creating_predictions
     
 
