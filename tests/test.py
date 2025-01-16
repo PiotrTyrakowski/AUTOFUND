@@ -5,10 +5,10 @@ print(get_project_root())
 
 from numerai_automl.data_managers.data_loader import DataLoader
 
-data_loader = DataLoader(data_version="v5.0", feature_set="small")
+data_loader = DataLoader(data_version="v5.0", feature_set="all")
 
-data = data_loader.load_live_data()
 
-print(data.columns)
+
+data = data_loader.get_features()
 
 print(data)

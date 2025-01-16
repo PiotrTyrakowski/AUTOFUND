@@ -16,7 +16,7 @@ class FeatureNeutralizer:
         :param max_number_of_features_to_neutralize: Maximum number of features to neutralize (default is 6).
         :param proportions: List of proportions to use for neutralization (default is [0.25, 0.5, 0.75, 1.0]).
         """
-        self.iterations = number_of_iterations
+        self.number_of_iterations = number_of_iterations
         self.all_features = all_features
         self.max_number_of_features_to_neutralize = max_number_of_features_to_neutralize
         self.proportions = proportions
@@ -122,19 +122,31 @@ class FeatureNeutralizer:
         """
         Applies neutralization to the predictions based on the specified features and proportion.
 
-        :param data: DataFrame containing features, era, and predictions
+        :param data: DataFrame containing features and predictions. If 'era' column exists,
+                    neutralization will be applied per era, otherwise globally.
         :param prediction_name: Name of the column containing predictions
         :param neutralization_params: Dictionary with features_to_neutralize and proportion
         :return: A DataFrame with neutralized predictions
         """
 
-        neutralized_predictions = data.groupby("era", group_keys=True).apply(
+      
+        
+        if "era" in data.columns:
+            neutralized_predictions = data.groupby("era", group_keys=True).apply(
                 lambda d: neutralize(
-                d[[prediction_name]],
-                d[neutralization_params["features_to_neutralize"]],
-                proportion=neutralization_params["proportion"]
+                    d[[prediction_name]],
+                    d[neutralization_params["features_to_neutralize"]],
+                    proportion=neutralization_params["proportion"]
                 )
             ).reset_index().set_index("id")
+        else:
+            # Apply neutralization globally if no era column exists
+            neutralized_predictions = neutralize(
+                data[[prediction_name]],
+                data[neutralization_params["features_to_neutralize"]],
+                proportion=neutralization_params["proportion"]
+            )
+            neutralized_predictions = pd.DataFrame(neutralized_predictions, index=data.index)
         
         # Rename the prediction column to match the input name
         neutralized_predictions.rename(columns={prediction_name: f"neutralized_{prediction_name}"}, inplace=True)

@@ -1,10 +1,10 @@
 from matplotlib import pyplot as plt
 from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
-from numerai_automl.model_managers.model_manager import ModelManager
+from numerai_automl.model_managers.base_model_manager import BaseModelManager
 
 
 def test_model_manager():
-    model_manager = ModelManager(
+    model_manager = BaseModelManager(
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     model_manager.train_base_models()
@@ -16,7 +16,7 @@ def test_model_manager():
     print(neutralized_predictions)
 
 def test_model_manager2():
-    model_manager = ModelManager(
+    model_manager = BaseModelManager(
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     model_manager.load_base_models()
@@ -29,7 +29,7 @@ def test_model_manager2():
 
 
 def test_model_manager3():
-    model_manager = ModelManager(
+    model_manager = BaseModelManager(
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     model_manager.load_base_models()
@@ -42,15 +42,15 @@ def test_model_manager3():
 
     print(neutralized_predictions[['target', 'neutralized_predictions_model_target', 'neutralized_predictions_model_target_victor_20']])
 
-    weighted_ensembler = WeightedTargetEnsembler(
-        all_neutralized_prediction_features=["neutralized_predictions_model_target", "neutralized_predictions_model_target_victor_20"],
+
+    model_manager.find_weighted_ensemble(
+        metric="mean",
         target_name="target",
-        number_of_interations=2,
-        max_number_of_prediction_features_for_ensemble=2,
+        number_of_iterations=2,
+        max_number_of_prediction_features0_for_ensemble=2,
         number_of_diffrent_weights_for_ensemble=5
     )
 
-    print(weighted_ensembler.find_ensemble_prediction_features_and_proportions(neutralized_predictions))
-
+    
 if __name__ == "__main__":
     test_model_manager3()

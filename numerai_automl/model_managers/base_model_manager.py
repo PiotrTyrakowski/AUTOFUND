@@ -5,8 +5,9 @@ import os
 import pandas as pd
 import cloudpickle
 from numerai_automl.data_managers.data_manager import DataManager
+from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
 from numerai_automl.feature_neutralizer.feature_neutralizer import FeatureNeutralizer
-from numerai_automl.model_trainer.model_trainer import ModelTrainer
+from numerai_automl.model_trainers.lgbm_model_trainer import LGBMModelTrainer
 from numerai_automl.utils.utils import get_project_root
 
 # find folder models in my project
@@ -17,7 +18,7 @@ main_target = MAIN_TARGET
 feature_neutralization_proportions = FEATURE_NEUTRALIZATION_PROPORTIONS
 
 
-class ModelManager:
+class BaseModelManager:
     """
     Manages the lifecycle of machine learning models for Numerai, including training, 
     prediction creation, and feature neutralization.
@@ -39,8 +40,8 @@ class ModelManager:
 
     def __init__(self, data_version: str = "v5.0", 
                  feature_set: str = "small", 
-                 lightgbm_params: Dict = lightgbm_params,
-                 targets_names_for_base_models: List[str] = target_candidates):
+                 targets_names_for_base_models: List[str] = target_candidates,
+                 lightgbm_params: Dict = lightgbm_params):
         """
         Initialize the ModelManager.
 
@@ -83,7 +84,7 @@ class ModelManager:
 
         self.base_models = {}
         for target in self.targets_names_for_base_models:
-            modelTrainer = ModelTrainer(self.lightgbm_params)
+            modelTrainer = LGBMModelTrainer(self.lightgbm_params)
             modelTrainer.train(train_data[features_names], train_data[target])
             self.base_models[f"model_{target}"] = modelTrainer.get_model()
 
@@ -98,8 +99,8 @@ class ModelManager:
         if self.base_models is None:
             raise Exception("Models do not exist")
         
-        for target, model in self.base_models.items():
-            model_path = f"{self.project_root}/models/base_models/model_{target}.pkl"
+        for model_name, model in self.base_models.items():
+            model_path = f"{self.project_root}/models/base_models/{model_name}.pkl"
             with open(model_path, "wb") as f:
                 cloudpickle.dump(model, f)
 
@@ -114,6 +115,8 @@ class ModelManager:
             with open(model_path, "rb") as f:
                 self.base_models[f"model_{target}"] = cloudpickle.load(f)
 
+        return self.base_models
+
     def get_base_models(self) -> Dict:
         """
         Retrieve the dictionary of trained base models.
@@ -123,7 +126,7 @@ class ModelManager:
         """
         return self.base_models
     
-    def create_predictions_for_base_models(self) -> pd.DataFrame:
+    def create_predictions_by_base_models(self) -> pd.DataFrame:
         """
         Create predictions using all base models on the latest tournament data.
         
@@ -138,7 +141,7 @@ class ModelManager:
             predictions = self.base_models[f"model_{target}"].predict(data_for_creating_predictions[features_names])
             data_for_creating_predictions[f"predictions_model_{target}"] = predictions
 
-        self.data_manager.save_predictions_for_base_models(data_for_creating_predictions)
+        self.data_manager.save_vanila_predictions_by_base_models(data_for_creating_predictions)
         return data_for_creating_predictions
     
 
@@ -146,7 +149,7 @@ class ModelManager:
             self,
             metric: str = "mean",
             target_name: str = main_target, 
-            iterations: int = 10, 
+            number_of_iterations: int = 10, 
             max_number_of_features_to_neutralize: int = 5, 
             proportions: List[float] = feature_neutralization_proportions
             ) -> Dict:
@@ -166,14 +169,14 @@ class ModelManager:
         if self.base_models is None:
             raise Exception("Base models do not exist")
         
-        validation_data = self.data_manager.load_validation_data_for_neutralization_of_base_models()
+        validation_data = self.data_manager.load_vanila_predictions_data_by_base_models()
         features_names = self._get_features_names(validation_data)
         predictions_names = self._get_predictions_names(validation_data)
 
         neutralizer = FeatureNeutralizer(
             features_names, 
             target_name, 
-            iterations, 
+            number_of_iterations, 
             max_number_of_features_to_neutralize, 
             proportions
         )
@@ -220,8 +223,10 @@ class ModelManager:
         """
         with open(f"{self.project_root}/models/neutralization_params/neutralization_params.json", "r") as f:
             self.neutralization_params = json.load(f)
+
+        return self.neutralization_params
     
-    def create_neutralized_predictions_from_base_models_predictions(self) -> pd.DataFrame:
+    def create_neutralized_predictions_by_base_models_predictions(self) -> pd.DataFrame:
         """
         Apply feature neutralization to the predictions from base models using stored
         neutralization parameters.
@@ -241,7 +246,7 @@ class ModelManager:
         if self.neutralization_params is None:
             raise Exception("Neutralization params do not exist")
         
-        vanila_predictions_data = self.data_manager.load_vanila_predictions_data()
+        vanila_predictions_data = self.data_manager.load_vanila_predictions_data_by_base_models()
         features_names = self._get_features_names(vanila_predictions_data)
         predictions_names = self._get_predictions_names(vanila_predictions_data)
 
@@ -258,8 +263,10 @@ class ModelManager:
 
         # Remove original prediction columns
         neutralized_predictions.drop(columns=predictions_names, inplace=True)
-        self.data_manager.save_neutralized_predictions_for_base_models(neutralized_predictions)
+        self.data_manager.save_neutralized_predictions_by_base_models(neutralized_predictions)
 
         return neutralized_predictions
+    
+   
 
 
