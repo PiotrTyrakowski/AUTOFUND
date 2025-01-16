@@ -35,7 +35,8 @@ class WeightedTargetEnsembler:
         self.best_ensemble_features_and_weights = {}
 
         if all_neutralized_prediction_features != []:
-            assert self.max_number_of_prediction_features_for_ensemble <= len(self.all_neutralized_prediction_features), "The max number of prediction features for ensemble is greater than the number of all neutralized prediction features"
+            if self.max_number_of_prediction_features_for_ensemble > len(self.all_neutralized_prediction_features):
+                self.max_number_of_prediction_features_for_ensemble = len(self.all_neutralized_prediction_features)
 
     
     def find_ensemble_prediction_features_and_proportions(self, train_data: pd.DataFrame, metric: str="mean") -> Dict[str, Union[Dict, Dict]]:
@@ -138,6 +139,7 @@ class WeightedTargetEnsembler:
         self.best_ensemble_features_and_weights = best_ensemble_features_and_weights
         
         self.save_ensemble_model()
+        
         return {
             "ensemble_features_and_weights": best_ensemble_features_and_weights,
             "scores": best_scores

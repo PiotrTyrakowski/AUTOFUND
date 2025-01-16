@@ -126,7 +126,7 @@ class BaseModelManager:
         """
         return self.base_models
     
-    def create_predictions_for_base_models(self) -> pd.DataFrame:
+    def create_predictions_by_base_models(self) -> pd.DataFrame:
         """
         Create predictions using all base models on the latest tournament data.
         
@@ -226,7 +226,7 @@ class BaseModelManager:
 
         return self.neutralization_params
     
-    def create_neutralized_predictions_from_by_models_predictions(self) -> pd.DataFrame:
+    def create_neutralized_predictions_by_base_models_predictions(self) -> pd.DataFrame:
         """
         Apply feature neutralization to the predictions from base models using stored
         neutralization parameters.
