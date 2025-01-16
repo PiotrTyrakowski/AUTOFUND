@@ -96,22 +96,20 @@ class MetaModelManager:
 
 
     def create_weighted_meta_model_predictions(self, X: pd.DataFrame) -> pd.Series:
-        """Creates weighted ensemble predictions using neutralized base model predictions.
-        
-        Args:
-            X (pd.DataFrame): Input features dataframe
-            
-        Returns:
-            pd.Series: Weighted ensemble predictions
-        """
         weighted_ensembler = self.ensemble_model_manager.load_ensemble_model("weighted")
         neutralized_predictions = self.create_neutralized_predictions(X)
 
         return weighted_ensembler.predict(neutralized_predictions)
+    
+    def create_lgbm_meta_model_predictions(self, X: pd.DataFrame) -> pd.Series:
+        lgbm_ensembler = self.ensemble_model_manager.load_ensemble_model("lgbm")
+        neutralized_predictions = self.create_neutralized_predictions(X)
+
+        return lgbm_ensembler.predict(neutralized_predictions)
 
         
 
-    def save_meta_model(self, type: str):
+    def save_predictor(self, type: str):
         """Saves the meta model to disk."""
 
         if type == "weighted":
@@ -119,13 +117,22 @@ class MetaModelManager:
             # save model with pickl
             with open(f"{self.project_root}/models/meta_models/weighted_meta_model/weighted_meta_model.pkl", "wb") as f:
                 cloudpickle.dump(predictions, f)
+        elif type == "lgbm":
+            predictions = self.create_lgbm_meta_model_predictions
+            with open(f"{self.project_root}/models/meta_models/lgbm_meta_model/lgbm_meta_model.pkl", "wb") as f:
+                cloudpickle.dump(predictions, f)
+        else:
+            raise ValueError(f"Unknown meta model type: {type}")
 
         
 
-    def load_meta_model(self, type: str):
+    def load_predictor(self, type: str):
         """Loads the meta model from disk."""
         if type == "weighted":
             with open(f"{self.project_root}/models/meta_models/weighted_meta_model/weighted_meta_model.pkl", "rb") as f:
+                return cloudpickle.load(f)
+        elif type == "lgbm":
+            with open(f"{self.project_root}/models/meta_models/lgbm_meta_model/lgbm_meta_model.pkl", "rb") as f:
                 return cloudpickle.load(f)
         else:
             raise ValueError(f"Meta model type {type} not found")

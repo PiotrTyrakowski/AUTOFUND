@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import cloudpickle
 from numerai_automl.data_managers.data_manager import DataManager
+from numerai_automl.ensemblers.lgbm_ensembler import LGBMEnsembler
 from numerai_automl.ensemblers.weighted_ensembler import WeightedTargetEnsembler
 from numerai_automl.feature_neutralizer.feature_neutralizer import FeatureNeutralizer
 from numerai_automl.model_trainers.lgbm_model_trainer import LGBMModelTrainer
@@ -22,7 +23,7 @@ class EnsembleModelManager:
                  feature_set: str = "small", 
                  targets_names_for_base_models: List[str] = target_candidates):
         """
-        Initialize the ModelManager.
+        Initialize the EnsembleModelManager.
 
         Args:
             data_version (str): Version of the dataset to use
@@ -65,6 +66,17 @@ class EnsembleModelManager:
         self.save_ensemble_model("weighted")
         return weighted_ensembler
     
+    def find_lgbm_ensemble(self):
+        all_neutralized_prediction_features = [f"neutralized_predictions_model_{target_name}" for target_name in self.targets_names_for_base_models]
+
+        train_data = self.data_manager.load_train_data_for_ensembler()
+
+        lgbm_ensembler = LGBMEnsembler(all_neutralized_prediction_features, target_name=main_target)
+        lgbm_ensembler.find_lgbm_ensemble(train_data)
+        self.lgbm_ensembler = lgbm_ensembler
+        self.save_ensemble_model("lgbm")
+        return lgbm_ensembler
+    
     # def get_ensembler_params(self) -> Dict:
     #     """
     #     Retrieve the current weighted ensembler params.
@@ -98,6 +110,8 @@ class EnsembleModelManager:
     def save_ensemble_model(self, type: str):
         if type == "weighted":
             self.weighted_ensembler.save_ensemble_model()
+        elif type == "lgbm":
+            self.lgbm_ensembler.save_ensemble_model()
         else:
             raise ValueError(f"Unknown ensemble model type: {type}")
         
@@ -105,6 +119,9 @@ class EnsembleModelManager:
         if type == "weighted":
             weighted_ensembler = WeightedTargetEnsembler.load_ensemble_model()
             return weighted_ensembler
+        elif type == "lgbm":
+            lgbm_ensembler = LGBMEnsembler.load_ensemble_model()
+            return lgbm_ensembler
         else:
             raise ValueError(f"Unknown ensemble model type: {type}")
 
