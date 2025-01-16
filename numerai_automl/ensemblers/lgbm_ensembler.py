@@ -1,20 +1,29 @@
 from typing import Any, Dict, List, Union
+import numpy as np
 import pandas as pd
 import random
+
+from sklearn.model_selection import KFold, ParameterSampler
 from numerai_automl.model_trainers.lgbm_model_trainer import LGBMModelTrainer
 from numerai_automl.scorer.scorer import Scorer
-from numerai_automl.config.config import LIGHTGBM_PARAMS_OPTION
+from numerai_automl.config.config import LIGHTGBM_PARAM_GRID, LIGHTGBM_PARAMS_OPTION
 import cloudpickle
+from numerai_tools.scoring import numerai_corr
 
 from numerai_automl.utils.utils import get_project_root
+from sklearn.model_selection import GroupKFold
 
-lightgbm_param_grid = LIGHTGBM_PARAMS_OPTION
 
-# TODO: MAKE RANDOM SEARCH FOR FINDING THE BEST PARAMETERS
+
+
+lightgbm_param_grid = LIGHTGBM_PARAM_GRID
+
 class LGBMEnsembler:
     def __init__(self, 
                  all_neutralized_prediction_features: List[str],
-                 target_name: str = 'target'
+                 target_name: str = 'target',
+                 number_of_interations: int = 30,
+                 cv_folds: int = 5
                  ):
         self.scorer = Scorer()
         self.all_neutralized_prediction_features = all_neutralized_prediction_features
@@ -22,29 +31,73 @@ class LGBMEnsembler:
         self.neutralized_predictions_model_target = f"neutralized_predictions_model_{target_name}"
         self.model_trainer = None # LGBMModelTrainer(lightgbm_param_grid)
         self.project_root = get_project_root()
+        self.number_of_interations = number_of_interations
+        self.cv_folds = cv_folds
     
     def find_lgbm_ensemble(self, train_data: pd.DataFrame):
-        # check if neutralized_predictions_model_target is in the train_data
-        assert self.neutralized_predictions_model_target in train_data.columns, f"The feature {self.neutralized_predictions_model_target} is not in the validation data"
-
-        # check if all_neutralized_prediction_features are in the train_data
-        for feature in self.all_neutralized_prediction_features:
-            assert feature in train_data.columns, f"The feature {feature} is not in the validation data"
-
-        # check if era is in the train_data
-        assert "era" in train_data.columns, "The validation data does not have an era column"
-
-        # check if target_name is in the validation_data
-        assert self.target_name in train_data.columns, f"The target {self.target_name} is not in the validation data"
 
         X = train_data[self.all_neutralized_prediction_features]
         y = train_data[self.target_name]
+        eras = train_data["era"]
 
-        self.model_trainer = LGBMModelTrainer(lightgbm_param_grid)
+        # Initialize random parameter sampler
+        param_list = list(ParameterSampler(
+            lightgbm_param_grid, 
+            n_iter=self.number_of_interations
+            # random_state=self.random_state
+        ))
 
+        best_score = float('-inf')
+        best_params = None
+
+        print(f"Starting Random Search with {self.number_of_interations} iterations and {self.cv_folds}-fold cross-validation.")
+
+        for idx, params in enumerate(param_list):
+            cv_scores = []
+            group_kf = GroupKFold(n_splits=self.cv_folds)
+            for fold, (train_idx, val_idx) in enumerate(group_kf.split(X, y, groups=eras)):
+                X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+                y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+                eras_val = eras.iloc[val_idx]
+
+                # Initialize and train the model with current params
+                model = LGBMModelTrainer(params)
+                model.train(X_train, y_train)
+                predictions = model.get_model().predict(X_val)
+
+                # Create a DataFrame for correlation calculation
+                cv_data = pd.DataFrame({
+                    'prediction': predictions,
+                    'target': y_val,
+                    'era': eras_val
+                })
+
+
+                
+                # Calculate numerai correlation
+                correlations = numerai_corr(cv_data[['prediction']], cv_data['target'])
+                score = correlations.mean()
+
+                cv_scores.append(score)
+
+            avg_score = np.mean(cv_scores)
+            print(f"Iteration {idx+1}/{self.number_of_interations}: Avg CV Numerai Corr = {avg_score:.6f}")
+
+            # Update best params
+            if avg_score > best_score:
+                best_score = avg_score
+                best_params = params
+
+        self.best_params = best_params
+        self.best_score = best_score
+        print(f"Best CV Numerai Corr: {self.best_score:.6f} with parameters: {self.best_params}")
+
+        # Train the final model with best parameters on the entire dataset
+        self.model_trainer = LGBMModelTrainer(self.best_params)
         self.model_trainer.train(X, y)
-
         self.model_trainer.get_model()
+
+        self.save_ensemble_model()
 
     def predict(self, X: pd.DataFrame):
         return self.model_trainer.get_model().predict(X)
