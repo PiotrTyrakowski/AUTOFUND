@@ -19,16 +19,34 @@ def test_meta_model_manager():
 
 
     # TODO: THIS FUCNTION SHOULD BNE TOTALY DIFFENT NOW IT RETURNS ONLY PREDICTIONS
-    pred = model_manager.create_weighted_meta_model_predictions(X)
+    # pred = model_manager.create_weighted_meta_model_predictions(X)
 
-    model_manager.save_meta_model("weighted")
+    # model_manager.save_predictor("weighted")
 
-    func = model_manager.load_meta_model("weighted")
+    func = model_manager.load_predictor("weighted")
+    print(func(X))
+
+def test_meta_model_manager2():
+
+
+    model_manager = MetaModelManager(
+        targets_names_for_base_models=["target", "target_victor_20"],
+        )
+
+    data_manager = DataManager(data_version="v5.0", feature_set="small")    
+
+    # X = data_manager.load_live_data()
+    X = data_manager.load_train_data_for_base_models()
+
+
+
+
+    func = model_manager.load_predictor("lgbm")
     print(func(X))
 
 
     
 if __name__ == "__main__":
-    test_meta_model_manager()
+    test_meta_model_manager2()
 
 

@@ -66,7 +66,7 @@ class EnsembleModelManager:
         self.save_ensemble_model("weighted")
         return weighted_ensembler
     
-    def find_lgbm_ensemble(self):
+    def find_lgbm_ensemble(self, target_name: str = main_target):
         all_neutralized_prediction_features = [f"neutralized_predictions_model_{target_name}" for target_name in self.targets_names_for_base_models]
 
         train_data = self.data_manager.load_train_data_for_ensembler()

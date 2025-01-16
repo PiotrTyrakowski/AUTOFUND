@@ -18,10 +18,14 @@ models/neutralization_params/*
 # Ensemble Models
 models/ensemble_models/weighted_ensembler/*
 !models/ensemble_models/weighted_ensembler/.gitkeep
+models/ensemble_models/lgbm_ensembler/*
+!models/ensemble_models/lgbm_ensembler/.gitkeep
 
 # Meta Models
 models/meta_models/weighted_meta_model/*
 !models/meta_models/weighted_meta_model/.gitkeep
+models/meta_models/lgbm_meta_model/*
+!models/meta_models/lgbm_meta_model/.gitkeep
 
 # Predictions
 predictions/*
