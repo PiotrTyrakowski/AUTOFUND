@@ -150,8 +150,8 @@ def test_pipeline3():
     preds_lgbm = predictor_lgbm(X)
 
 
-    X["target"] = preds_target
-    X["target_victor_20"] = preds_target_victor_20
+    X["model_target_predictions"] = preds_target
+    X["model_target_victor_20_predictions"] = preds_target_victor_20
     X["meta_weighted_predictions"] = preds_weighted
     X["meta_lgbm_predictions"] = preds_lgbm
 
