@@ -141,20 +141,19 @@ def test_pipeline3():
 
     # this will be end validation data that we will do scoring plots etc staff like that.
     # X = data_loader.load_validation_data() # this i only checked to see comparison with notebooks
-    X = data_manager.load_validation_data_for_ensembler()
-    print(len(X.columns))
+    X = data_manager.load_validation_data_for_meta_model()
 
     features = data_manager.get_features()
     preds_target = target_model.predict(X[features])
-    preds_target_victor_20 = target_victor_20_model.predict(X[features])
-    preds_weighted = predictor_weighted(X)
-    preds_lgbm = predictor_lgbm(X)
+    # preds_target_victor_20 = target_victor_20_model.predict(X[features])
+    # preds_weighted = predictor_weighted(X)
+    # preds_lgbm = predictor_lgbm(X)
 
 
     X["model_target_predictions"] = preds_target
-    X["model_target_victor_20_predictions"] = preds_target_victor_20
-    X["meta_weighted_predictions"] = preds_weighted
-    X["meta_lgbm_predictions"] = preds_lgbm
+    # X["model_target_victor_20_predictions"] = preds_target_victor_20
+    # X["meta_weighted_predictions"] = preds_weighted
+    # X["meta_lgbm_predictions"] = preds_lgbm
 
     scorer = Scorer()
     scores = scorer.compute_scores(X, "target")
@@ -163,8 +162,8 @@ def test_pipeline3():
 
     print(X.head())
 
-    print(preds_weighted)
-    print(preds_lgbm)
+    # print(preds_weighted)
+    # print(preds_lgbm)
 
 if __name__ == "__main__":
     test_pipeline3()
