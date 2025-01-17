@@ -44,5 +44,7 @@ numerai_automl/data_managers/__pycache__/
 numerai_automl/utils/__pycache__/
 numerai_automl/tests/__pycache__/
 
+return_data.csv
+
 
 

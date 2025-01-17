@@ -276,6 +276,8 @@ class BaseModelManager:
         if self.base_models is None:
             raise Exception("Base models do not exist")
         
+        assert metric in ["mean", "std", "sharpe", "max_drawdown"], "The metric is not valid"
+        
         validation_data = self.data_manager.load_vanila_predictions_data_by_base_models()
         features_names = self._get_features_names(validation_data)
         predictions_names = self._get_predictions_names(validation_data)

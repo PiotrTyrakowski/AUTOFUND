@@ -64,5 +64,5 @@ MAIN_TARGET = "target"
 
 FEATURE_NEUTRALIZATION_PROPORTIONS = [0.25, 0.5, 0.75, 1.0]
 
-FEATURE_SET_OPTIONS = ["small", "medium", "large"]
-FEATURE_SET_OPTION = "small"
+FEATURE_SET_OPTIONS = ["small", "medium", "all"]
+FEATURE_SET_OPTION = "medium"
