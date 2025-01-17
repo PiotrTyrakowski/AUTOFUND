@@ -126,7 +126,7 @@ class MetaModelManager:
 
         
 
-    def save_predictor(self, type: str):
+    def create_and_save_predictor(self, type: str):
         """Saves the meta model to disk."""
 
         if type == "weighted":
