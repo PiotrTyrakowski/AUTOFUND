@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List
+from typing import Callable, Dict, List
 from numerai_automl.config.config import MAIN_TARGET, TARGET_CANDIDATES, LIGHTGBM_PARAMS_OPTION, FEATURE_NEUTRALIZATION_PROPORTIONS
 import os
 import pandas as pd
@@ -129,8 +129,19 @@ class BaseModelManager:
     
     def load_base_model_predictors(self) -> None:
         """
-        Load previously saved base models from disk.
-        Models are loaded from the project's models/base_models directory.
+        Creates prediction functions for each base model that handle data preprocessing and prediction generation.
+
+        This method:
+        1. Loads base models if not already loaded
+        2. Creates a predictor function for each model that:
+           - Takes a DataFrame as input
+           - Generates raw predictions using the model
+           - Converts predictions to percentile ranks (overall or per era)
+           - Returns a named pd.Series with predictions
+
+        Returns:
+            Dict[str, Callable]: Dictionary mapping model names to their predictor functions
+                                Each predictor takes a DataFrame and returns a pd.Series
         """
         if self.base_models == {}:
             self.load_base_models()
@@ -138,17 +149,19 @@ class BaseModelManager:
         self.base_model_predictors = {}
         for model_name, model in self.base_models.items():
             
-            def make_predictor(model, model_name):
-                def predict(data: pd.DataFrame) -> pd.DataFrame:
+            def make_predictor(model, model_name) -> Callable[[pd.DataFrame], pd.Series]:
+                def predict(data: pd.DataFrame) -> pd.Series:
                     
                     raw_predictions = model.predict(data[self.features_names])
-                    predictions = pd.DataFrame(raw_predictions, index=data.index)
-                    if "era" in data.columns:
-                        predictions[["era"]] = data[["era"]]
-                        predictions = predictions.groupby("era", group_keys=True).rank(pct=True)
-                    else:
-                        predictions = pd.DataFrame(predictions).rank(pct=True)
+                    predictions = pd.Series(raw_predictions, index=data.index)
 
+                    if "era" in data.columns:
+                        predictions = pd.Series(raw_predictions, index=data.index)
+                        predictions = predictions.groupby(data["era"], group_keys=True).rank(pct=True)
+                    else:
+                        predictions = pd.Series(raw_predictions, index=data.index).rank(pct=True)
+                    
+                    predictions.name = f"predictions_{model_name}"
                     return predictions
                 
                 return predict
@@ -160,8 +173,24 @@ class BaseModelManager:
         
     def load_neutralized_base_model_predictors(self) -> None:
         """
-        Load previously saved neutralized base models from disk.
-        Models are loaded from the project's models/base_models directory.
+        Creates prediction functions for each base model that include feature neutralization.
+
+        This method:
+        1. Loads base models and neutralization parameters if not already loaded
+        2. Creates a predictor function for each model that:
+           - Takes a DataFrame as input
+           - Generates raw predictions
+           - Applies feature neutralization using stored parameters
+           - Converts predictions to percentile ranks (overall or per era)
+           - Returns a named pd.Series with neutralized predictions
+
+        The key difference from load_base_model_predictors is that these predictors
+        apply feature neutralization to reduce the influence of specific features
+        on the final predictions.
+
+        Returns:
+            Dict[str, Callable]: Dictionary mapping model names to their neutralized predictor functions
+                                Each predictor takes a DataFrame and returns a pd.Series
         """
 
         if self.base_models == {}:
@@ -172,15 +201,16 @@ class BaseModelManager:
 
         feature_neutralizer = FeatureNeutralizer(self.features_names)
 
-        def make_predictor(model, model_name, feature_neutralizer):
-            def predict(data: pd.DataFrame) -> pd.DataFrame:
+        def make_predictor(model, model_name, feature_neutralizer) -> Callable[[pd.DataFrame], pd.Series]:
+            def predict(data: pd.DataFrame) -> pd.Series:
                 model_predictions = model.predict(data[self.features_names])
 
                 prediction_name = f"predictions_{model_name}"
-                data[prediction_name] = model_predictions
+                data_with_predictions = data.copy()
+                data_with_predictions[prediction_name] = model_predictions
 
                 neutralized_predictions = feature_neutralizer.apply_neutralization(
-                    data=data,
+                    data=data_with_predictions,
                     prediction_name=prediction_name,
                     neutralization_params=self.neutralization_params[prediction_name]["neutralization_params"]
                 )
@@ -191,7 +221,7 @@ class BaseModelManager:
                 else:
                     neutralized_predictions = neutralized_predictions.rank(pct=True)
 
-                return neutralized_predictions
+                return neutralized_predictions[f"neutralized_{prediction_name}"]
             return predict
 
         self.neutralized_base_model_predictors = {}

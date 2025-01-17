@@ -159,12 +159,14 @@ def test_pipeline3():
     preds_lgbm = predictor_lgbm(X)
 
 
-    X[["predictions_model_target"]] = preds_target
-    X[["neutralized_predictions_model_target"]] = preds_target_neutralized
-    X[["predictions_model_target_victor_20"]] = preds_target_victor_20
-    X[["neutralized_predictions_model_target_victor_20"]] = preds_target_victor_20_neutralized
-    X[["meta_weighted_predictions"]] = preds_weighted
-    X[["meta_lgbm_predictions"]] = preds_lgbm
+    X["predictions_model_target"] = preds_target
+    X["neutralized_predictions_model_target"] = preds_target_neutralized
+    X["predictions_model_target_victor_20"] = preds_target_victor_20
+    X["neutralized_predictions_model_target_victor_20"] = preds_target_victor_20_neutralized
+    print(preds_weighted)
+    print(X)
+    X["meta_weighted_predictions"] = preds_weighted
+    X["meta_lgbm_predictions"] = preds_lgbm
 
     scorer = Scorer()
     scores = scorer.compute_scores(X, "target")
