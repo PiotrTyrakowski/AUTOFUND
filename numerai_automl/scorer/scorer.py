@@ -38,25 +38,11 @@ class Scorer:
         )
         cumsum_corrs = correlations.cumsum()
 
-        def get_summary_metrics(scores, cumsum_scores):
-            summary_metrics = {}
-            # per era correlation between predictions of the model trained on this target and cyrus
-            mean = scores.mean()
-            std = scores.std()
-            sharpe = mean / std
-            rolling_max = cumsum_scores.expanding(min_periods=1).max()
-            max_drawdown = (rolling_max - cumsum_scores).max()
-            return {
-                "mean": mean,
-                "std": std,
-                "sharpe": sharpe,
-                "max_drawdown": max_drawdown,
-            }
-
+       
         target_summary_metrics = {}
 
         for pred_col in prediction_cols:
-            target_summary_metrics[pred_col] = get_summary_metrics(
+            target_summary_metrics[pred_col] = self._get_summary_metrics(
                 correlations[pred_col], cumsum_corrs[pred_col]
             )
         pd.set_option('display.float_format', lambda x: '%f' % x)
@@ -88,8 +74,7 @@ class Scorer:
 
         return cumsum_corrs
 
-    def get_mmc(self, data: pd.DataFrame, meta_model_col: str, target: str) -> (
-            pd.DataFrame, pd.DataFrame, pd.DataFrame):
+    def get_mmc(self, data: pd.DataFrame, meta_model_col: str, target: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Computes per-era MMC between our predictions, the meta-model and the target.
         Parameters:

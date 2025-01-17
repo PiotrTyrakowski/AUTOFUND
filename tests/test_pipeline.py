@@ -130,9 +130,13 @@ def test_pipeline3():
         )
 
 
-    models = model_manager.load_base_models()
-    target_model = models["model_target"]
-    target_victor_20_model = models["model_target_victor_20"]
+    predictors = model_manager.load_base_model_predictors()
+    target_predictor = predictors["model_target"]
+    target_victor_20_predictor = predictors["model_target_victor_20"]
+
+    neutralized_predictors = model_manager.load_neutralized_base_model_predictors()
+    neutralized_target_predictor = neutralized_predictors["neutralized_model_target"]
+    neutralized_target_victor_20_predictor = neutralized_predictors["neutralized_model_target_victor_20"]
 
     
 
@@ -143,17 +147,26 @@ def test_pipeline3():
     # X = data_loader.load_validation_data() # this i only checked to see comparison with notebooks
     X = data_manager.load_validation_data_for_meta_model()
 
+    # take top 2000 rows
+    # X = X.head(2000)
+
     features = data_manager.get_features()
-    preds_target = target_model.predict(X[features])
-    # preds_target_victor_20 = target_victor_20_model.predict(X[features])
-    # preds_weighted = predictor_weighted(X)
-    # preds_lgbm = predictor_lgbm(X)
+    preds_target = target_predictor(X)
+    preds_target_neutralized = neutralized_target_predictor(X)
+    preds_target_victor_20 = target_victor_20_predictor(X[features])
+    preds_target_victor_20_neutralized = neutralized_target_victor_20_predictor(X[features])
+    preds_weighted = predictor_weighted(X)
+    preds_lgbm = predictor_lgbm(X)
 
 
-    X["model_target_predictions"] = preds_target
-    # X["model_target_victor_20_predictions"] = preds_target_victor_20
-    # X["meta_weighted_predictions"] = preds_weighted
-    # X["meta_lgbm_predictions"] = preds_lgbm
+    X["predictions_model_target"] = preds_target
+    X["neutralized_predictions_model_target"] = preds_target_neutralized
+    X["predictions_model_target_victor_20"] = preds_target_victor_20
+    X["neutralized_predictions_model_target_victor_20"] = preds_target_victor_20_neutralized
+    print(preds_weighted)
+    print(X)
+    X["meta_weighted_predictions"] = preds_weighted
+    X["meta_lgbm_predictions"] = preds_lgbm
 
     scorer = Scorer()
     scores = scorer.compute_scores(X, "target")
