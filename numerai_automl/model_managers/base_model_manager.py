@@ -54,6 +54,7 @@ class BaseModelManager:
         self.project_root = get_project_root()
         self.targets_names_for_base_models = targets_names_for_base_models
         self.data_manager = DataManager(data_version, feature_set)
+        self.features_names = self.data_manager.get_features()
         self.lightgbm_params = lightgbm_params
         self.base_models = {}
         self.neutralization_params = {}
@@ -125,6 +126,82 @@ class BaseModelManager:
             Dict: Dictionary of trained models with keys as model names
         """
         return self.base_models
+    
+    def load_base_model_predictors(self) -> None:
+        """
+        Load previously saved base models from disk.
+        Models are loaded from the project's models/base_models directory.
+        """
+        if self.base_models == {}:
+            self.load_base_models()
+
+        self.base_model_predictors = {}
+        for model_name, model in self.base_models.items():
+            
+            def make_predictor(model, model_name):
+                def predict(data: pd.DataFrame) -> pd.DataFrame:
+                    
+                    raw_predictions = model.predict(data[self.features_names])
+                    predictions = pd.DataFrame(raw_predictions, index=data.index)
+                    if "era" in data.columns:
+                        predictions[["era"]] = data[["era"]]
+                        predictions = predictions.groupby("era", group_keys=True).rank(pct=True)
+                    else:
+                        predictions = pd.DataFrame(predictions).rank(pct=True)
+
+                    return predictions
+                
+                return predict
+
+            self.base_model_predictors[f"{model_name}"] = make_predictor(model, model_name)
+
+        return self.base_model_predictors
+
+        
+    def load_neutralized_base_model_predictors(self) -> None:
+        """
+        Load previously saved neutralized base models from disk.
+        Models are loaded from the project's models/base_models directory.
+        """
+
+        if self.base_models == {}:
+            self.load_base_models()
+            
+        if self.neutralization_params == {}:
+            self.load_neutralization_params()
+
+        feature_neutralizer = FeatureNeutralizer(self.features_names)
+
+        def make_predictor(model, model_name, feature_neutralizer):
+            def predict(data: pd.DataFrame) -> pd.DataFrame:
+                model_predictions = model.predict(data[self.features_names])
+
+                prediction_name = f"predictions_{model_name}"
+                data[prediction_name] = model_predictions
+
+                neutralized_predictions = feature_neutralizer.apply_neutralization(
+                    data=data,
+                    prediction_name=prediction_name,
+                    neutralization_params=self.neutralization_params[prediction_name]["neutralization_params"]
+                )
+
+                if "era" in data.columns:
+                    neutralized_predictions[["era"]] = data[["era"]]
+                    neutralized_predictions = neutralized_predictions.groupby("era", group_keys=True).rank(pct=True)
+                else:
+                    neutralized_predictions = neutralized_predictions.rank(pct=True)
+
+                return neutralized_predictions
+            return predict
+
+        self.neutralized_base_model_predictors = {}
+        for model_name, model in self.base_models.items():
+            self.neutralized_base_model_predictors[f"neutralized_{model_name}"] = make_predictor(
+                model, model_name, feature_neutralizer
+            )
+
+        return self.neutralized_base_model_predictors
+
     
     def create_predictions_by_base_models(self) -> pd.DataFrame:
         """
