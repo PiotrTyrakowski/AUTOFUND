@@ -65,8 +65,12 @@ def main_run():
 
     print("FINISHED PREDICTING")
 
-    # data to csv
     return_data.to_csv("return_data.csv")
+
+    scorer = Scorer()
+    scores = scorer.compute_scores(return_data, "target")
+
+    scores.to_csv("return_data_for_scoring.csv")
 
 
 def test_pipeline():
@@ -260,5 +264,5 @@ def test_pipeline4():
     print(scores)
 
 if __name__ == "__main__":
-    test_pipeline4()
+    main_run()
 
