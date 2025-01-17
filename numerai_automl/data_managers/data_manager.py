@@ -116,6 +116,21 @@ class DataManager:
        
        
         return validation_data
+    
+    def load_validation_data_for_meta_model(self):
+        """Load second half of eras for ensemble model validation.
+        
+        Returns:
+            pd.DataFrame: Validation data for ensemble model
+        """
+        validation_data = self.data_loader.load_validation_data()
+        min_era, max_era = self._get_min_and_max_era(validation_data)
+
+        mid_era = (min_era + max_era) // 2
+        validation_data = validation_data[validation_data["era"].str.replace('era', '').astype(int) >= mid_era]
+       
+       
+        return validation_data
 
 
    

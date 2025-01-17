@@ -1,7 +1,6 @@
 # numerai_automl/config.py
 
 DATA_VERSION = "v5.0"
-MAIN_TARGET = "target_cyrusd_20"
 
 LIGHTGBM_PARAMS_OPTION = {
     "n_estimators": 2000,
@@ -22,15 +21,17 @@ LIGHTGBM_PARAMS_OPTION = {
 #     "min_data_in_leaf": 10000
 # }
 
-LIGHTGBM_PARAM_GRID={
-    'learning_rate': [0.01, 0.05, 0.1, 0.2, 0.3, 0.5],
-    'n_estimators': [20, 50, 100, 300, 500, 1000, 1500, 2000],
-    'max_depth': [-1, 3, 5, 7, 10, 12],
-    'num_leaves': [20, 31, 50, 70, 100, 150],
-    'min_child_samples': [10, 20, 50, 100, 200],
-    'subsample': [0.1, 0.2, 0.4, 0.6, 0.8, 1.0],
-    'colsample_bytree': [0.1, 0.2, 0.4, 0.6, 0.8, 1.0],
-    'n_jobs': [-1]
+LIGHTGBM_PARAM_GRID = {
+    'learning_rate': [0.01, 0.05, 0.1],
+    'n_estimators': [100, 200, 300],
+    'num_leaves': [15, 31, 63],
+    'min_child_samples': [5, 10, 20],
+    'min_child_weight': [0.001, 0.01],
+    'max_depth': [3, 5, 7],
+    'colsample_bytree': [0.8, 0.9, 1.0],
+    'subsample': [0.8, 0.9, 1.0],
+    'reg_alpha': [0, 0.01, 0.1],
+    'reg_lambda': [0, 0.01, 0.1],
 }
 
 ELASTIC_NET_PARAM_GRID = {

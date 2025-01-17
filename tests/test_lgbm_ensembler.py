@@ -17,7 +17,7 @@ def test_lgbm_ensembler():
         targets_names_for_base_models=["target", "target_victor_20"],
         )
     # ensemble_manager.find_weighted_ensemble()
-    ensemble_manager.find_lgbm_ensemble()
+    ensemble_manager.find_lgbm_ensemble(number_of_iterations=2, cv_folds=5)
 
 
     
