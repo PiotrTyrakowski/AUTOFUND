@@ -875,7 +875,7 @@ def test_low_high_std_plot():
                                                     19: -0.005192590828053003}}
     per_era = pd.DataFrame(per_era)
     per_era = per_era.set_index('era')
-    plotter = LowHighStdPlot(per_era, feature_metrics)
+    plotter = LowHighStdPlot(per_era, feature_metrics, which_highest_lowest='sharpe')
     fig = plotter.get_plot()
     fig.show()
 
