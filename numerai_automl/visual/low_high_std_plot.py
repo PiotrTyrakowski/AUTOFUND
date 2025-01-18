@@ -25,6 +25,8 @@ class LowHighStdPlot(AbstractPlot):
         self.feature_metrics = feature_metrics
         self.which_highest_lowest = which_highest_lowest
         self.possible_which_highest_lowest = ['std', 'sharpe', 'max_drawdown', 'mean']
+        if self.which_highest_lowest not in self.possible_which_highest_lowest:
+            raise ValueError(f"which_highest_lowest should be one of {self.possible_which_highest_lowest}")
 
     def get_plot(self) -> plt.Figure:
         fig, ax = plt.subplots(figsize=(15, 5))
