@@ -1,11 +1,12 @@
-# TODO: CHECK IF THE SCORER IS WORKING CORRECTLY
 from numerai_automl.scorer.scorer import Scorer
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+def test_cumsum_cor_plot():
 
-def test_mmc():
     scorer = Scorer()
 
     # stwórz dataframe z danymi testowymi
@@ -26,14 +27,22 @@ def test_mmc():
     df[['prediction_m1','prediction_m2','prediction_m3']]=minmax.fit_transform(df[['prediction_m1','prediction_m2','prediction_m3']])
     print("DATA input:")
     print(df)
-    x,y,z = scorer.get_mmc(df, meta_model_col='main_model', target='target')
-    print("PER ERA MMC:")
-    print(x)
-    print("CUMSUM MMC:")
-    print(y)
-    print("SUMMARY:")
-    print(z)
+    print("DATA before plotting:")
+    df2=scorer.compute_cumsum_correlation_per_era(df,'target')
+    print(df2)
+    # Usuwamy prefiks "prediction_" z nazw kolumn
+    df2.columns = [col.replace('prediction_', '') for col in df2.columns]
 
+    # Tworzymy wykres
+    df2.plot(figsize=(10, 6), linewidth=2)
+
+    # Dostosowanie wykresu
+    plt.title('Cumulative Correlation of Predictions and Target for each Era', fontsize=16)
+    plt.xlabel('Era', fontsize=14)
+    plt.ylabel('Cumulative Correlation', fontsize=14)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(title='Model', fontsize=12)
+    plt.show()
 
 if __name__ == '__main__':
-    test_mmc()
+    test_cumsum_cor_plot()
