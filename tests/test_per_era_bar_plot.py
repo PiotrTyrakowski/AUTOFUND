@@ -14,7 +14,7 @@ def test_per_era_bar_plot():
     # print(df)
     # print("BAR PLOT:")
 
-    df = pd.read_csv("return_data.csv")
+    # df = pd.read_csv("return_data.csv")
     rp = PerEraBarPlot(df)
     fig = rp.get_plot()
     plt.show()

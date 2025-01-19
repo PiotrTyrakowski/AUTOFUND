@@ -44,5 +44,8 @@ def test_cumsum_cor_plot():
     plt.legend(title='Model', fontsize=12)
     plt.show()
 
+    plt.savefig('cumsum_cor_plot.png')
+    plt.close()  # Close the figure to free memory
+
 if __name__ == '__main__':
     test_cumsum_cor_plot()

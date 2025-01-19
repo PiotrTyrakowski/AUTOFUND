@@ -1,4 +1,4 @@
-from numerai_automl.visual.raport_manager import RaportManager
+from numerai_automl.raport_manager.raport_manager import RaportManager
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":

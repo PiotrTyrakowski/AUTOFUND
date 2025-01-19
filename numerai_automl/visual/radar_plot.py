@@ -21,6 +21,7 @@ class RadarPlot(AbstractPlot):
             minumum = column.min()
             maximum = column.max()
             return (column - minumum) / (maximum - minumum)
+        print(self.data_for_visualization)
         df = self.data_for_visualization.apply(normalize)
         print(df)
         names_of_columns = df.columns.tolist()
