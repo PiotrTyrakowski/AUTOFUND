@@ -1,119 +1,74 @@
-# numerai_automl/automl_pipeline.py
-
 import pandas as pd
-from numerai_automl.data_loader import DataLoader
-from numerai_automl.model_trainer import ModelTrainer
-from numerai_automl.feature_neutralizer import FeatureNeutralizer
+from numerai_automl.data_managers.data_loader import DataLoader
+from numerai_automl.data_managers.data_manager import DataManager
+from numerai_automl.model_managers.base_model_manager import BaseModelManager
+from numerai_automl.model_managers.ensemble_model_manager import EnsembleModelManager
+from numerai_automl.model_managers.meta_model_manager import MetaModelManager
 from numerai_automl.scorer.scorer import Scorer
-from numerai_automl.reporter import Reporter
-from numerai_automl.utils.utils import save_model
-import cloudpickle
-from numerai_automl.config import LIGHTGBM_PARAMS_OPTION, FEATURE_SET_OPTION, TARGET_CANDIDATES
+from numerai_automl.config.config import TARGET_CANDIDATES
+
 
 def main():
-    # Initialize DataLoader
-    data_loader = DataLoader(data_version="v5.0", download_data=False) # change this to False if you already have the data
+    data_manager = DataManager(data_version="v5.0", feature_set="medium")
+    model_manager = BaseModelManager(
+        feature_set="medium",
+        targets_names_for_base_models=TARGET_CANDIDATES,
+        )
+    model_manager.train_base_models()
+    print("FINISHED TRAINING BASE MODELS")
+    model_manager.save_base_models()
+    print("FINISHED SAVING BASE MODELS")
+    model_manager.create_predictions_by_base_models()
+    print("FINISHED CREATING PREDICTIONS BY BASE MODELS")
+    model_manager.find_neutralization_features_and_proportions_for_base_models(metric="sharpe", number_of_iterations=50, max_number_of_features_to_neutralize=120)
+    print("FINISHED FINDING NEUTRALIZATION FEATURES AND PROPORTIONS FOR BASE MODELS")
+    model_manager.create_neutralized_predictions_by_base_models_predictions()
+    print("FINISHED CREATING NEUTRALIZED PREDICTIONS BY BASE MODELS PREDICTIONS")
+    ensemble_manager = EnsembleModelManager(
+        feature_set="medium",
+        targets_names_for_base_models=TARGET_CANDIDATES,
+        )
+    ensemble_manager.find_weighted_ensemble(metric="sharpe", number_of_iterations=20, max_number_of_prediction_features_for_ensemble=12, number_of_diffrent_weights_for_ensemble=12)
+    print("FINISHED FINDING WEIGHTED ENSEMBLE")
+    ensemble_manager.find_lgbm_ensemble(number_of_iterations=20, cv_folds=5)
+    print("FINISHED FINDING LGBM ENSEMBLE")
+    meta_manager = MetaModelManager(
+        feature_set="medium",
+        targets_names_for_base_models=TARGET_CANDIDATES,
+        )
+    meta_manager.create_and_save_predictor("weighted")
+    print("FINISHED CREATING AND SAVING WEIGHTED PREDICTOR")
+    meta_manager.create_and_save_predictor("lgbm")
+    print("FINISHED CREATING AND SAVING LGBM PREDICTOR")
 
-    targets_list = TARGET_CANDIDATES
-    lightgbm_params = LIGHTGBM_PARAMS_OPTION
-    feature_set = FEATURE_SET_OPTION
-    
-    # Load data
-    train = data_loader.load_train_data(feature_set=feature_set, target_set=targets_list, downsample_step=4)
-    validation = data_loader.load_validation_data(feature_set=feature_set, target_set=targets_list, downsample_step=4,
-                                                  start_index=1)
-    
-    # Extract features and target
-    feature_cols = train.columns.tolist()
-    feature_cols.remove("era")
-    for target in targets_list:
-        feature_cols.remove(target)
 
-    X_train = train[feature_cols]
-    y_train_list = train[targets_list]
-    
-    X_val = validation[feature_cols]
-    y_val = validation[["target"]]
+    # now loading data for meta model
+    X = data_manager.load_validation_data_for_meta_model()
 
-    # Initialize and train models with different parameter options
-    trainer = ModelTrainer(params=lightgbm_params)
+    return_data = X.copy()
+
+    print("FINISHED LOADING DATA FOR META MODEL")
+    # now predicting
+    predictor_weighted = meta_manager.load_predictor("weighted")
+    predictor_lgbm = meta_manager.load_predictor("lgbm")
+    return_data["predictions_model_meta_weighted"] = predictor_weighted(X)
+    return_data["predictions_model_meta_lgbm"] = predictor_lgbm(X)
+    return_data["predictions_model_omega"] = (return_data[["predictions_model_meta_weighted", "predictions_model_meta_lgbm"]].sum(axis=1)) / 2
+
+    base_models_predictors = model_manager.load_base_model_predictors()
+    neutralized_base_models_predictors = model_manager.load_neutralized_base_model_predictors()
+
+    for target_name in TARGET_CANDIDATES:
+        return_data[f"predictions_model_{target_name}"] = base_models_predictors[f"model_{target_name}"](X)
+        return_data[f"neutralized_predictions_model_{target_name}"] = neutralized_base_models_predictors[f"neutralized_model_{target_name}"](X)
 
 
-    models = {}
-    for i, target in enumerate(targets_list, start=1):
-        model_path = f"models/model_{target}.pkl"
-        
-        # Check if model exists
-        try:
-            with open(model_path, 'rb') as f:
-                model = cloudpickle.load(f)
-                print(f"Loading existing model for {target}")
-        except (FileNotFoundError, EOFError):
-            print(f"Training new model for {target}")
-            model = trainer.train(X_train, y_train_list[target])
-            save_model(model, model_path)
-            
-        models[f"model_{target}"] = model
-    
-    # Feature Neutralization
-    # neutralizer = FeatureNeutralizer(neutralizer_features=feature_cols, proportion=1.0)
-    predictions = {}
-    for name, model in models.items():
-        predictions_path = f"predictions/{name}_preds.pkl"
-        
-        # Check if predictions exist
-        try:
-            with open(predictions_path, 'rb') as f:
-                model_predictions = cloudpickle.load(f)
-                print(f"Loading existing predictions for {name}")
-                predictions[name] = model_predictions
-        except (FileNotFoundError, EOFError):
-            print(f"Generating new predictions for {name}")
-            predictions[name] = model.predict(X_val)
-            
-            with open(predictions_path, 'wb') as f:
-                cloudpickle.dump(predictions[name], f)
-    
-    predictions = pd.DataFrame(predictions)
-    # neutralized_predictions = neutralizer.apply(predictions, X_val)()
-    print("after predictions")
 
-    print(predictions["model_target"])
-    print(y_val["target"])
+    print("FINISHED PREDICTING")
 
-    exit()
+    return_data.to_csv("return_data.csv")
 
-    # TODO: i will need to repair this.
-    
-    # Scoring
     scorer = Scorer()
-    corr_scores = scorer.compute_corr(predictions["model_target"], y_val["target"])
+    scores = scorer.compute_scores(return_data, "target")
 
-
-    meta_model = pd.Series() 
-    mmc_scores = scorer.compute_mmc(predictions, meta_model, y_val)
-    
-    # Combine scores
-    scores = pd.concat([corr_scores, mmc_scores], axis=1)
-    scores.columns = ["CORR", "MMC"]
-    
-    # Reporting
-    reporter = Reporter(scores=scores)
-    summary = reporter.generate_summary()
-    print(summary)
-    reporter.plot_cumulative_scores()
-    reporter.plot_score_distribution()
-    reporter.save_report("numerai_automl_report.pdf")
-    
-    # Serialize the entire pipeline if needed
-    # pipeline = {
-    #     "models": models,
-    #     "neutralizer": neutralizer,
-    #     "scorer": scorer,
-    #     "scores": scores
-    # }
-    # with open("automl_pipeline.pkl", "wb") as f:
-    #     cloudpickle.dump(pipeline, f)
-
-if __name__ == "__main__":
-    main()
+    scores.to_csv("return_data_for_scoring.csv")
