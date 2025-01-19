@@ -47,9 +47,8 @@ class Scorer:
             )
         pd.set_option('display.float_format', lambda x: '%f' % x)
         summary = pd.DataFrame(target_summary_metrics).T
+        summary.index.name = 'predictions' 
 
-        # summary should have index as prediction_cols
-        summary.index = prediction_cols
         return summary
 
     def compute_cumsum_correlation_per_era(self, data: pd.DataFrame, target_name: str = 'target') -> pd.DataFrame:

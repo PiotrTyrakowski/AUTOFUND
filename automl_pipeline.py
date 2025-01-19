@@ -4,8 +4,11 @@ from numerai_automl.data_managers.data_manager import DataManager
 from numerai_automl.model_managers.base_model_manager import BaseModelManager
 from numerai_automl.model_managers.ensemble_model_manager import EnsembleModelManager
 from numerai_automl.model_managers.meta_model_manager import MetaModelManager
+from numerai_automl.raport_manager.raport_manager import RaportManager
 from numerai_automl.scorer.scorer import Scorer
 from numerai_automl.config.config import TARGET_CANDIDATES
+from numerai_automl.visual.cumsum_cor_plot import CumSumCorPlot
+from numerai_automl.visual.radar_plot import RadarPlot
 
 
 def main():
@@ -72,3 +75,17 @@ def main():
     scores = scorer.compute_scores(return_data, "target")
 
     scores.to_csv("return_data_for_scoring.csv")
+
+    print(f"FINISHED SCORE COMPUTING")
+
+    df = return_data[["predictions_model_target", "neutralized_predictions_model_target", "predictions_model_meta_weighted", "predictions_model_meta_lgbm", "predictions_model_omega", 'era',  "target"]]
+    csp = CumSumCorPlot(df)
+    cumsum_cor_plot = csp.get_plot()
+    df = pd.read_csv("return_data_for_scoring.csv", index_col=0)
+    df = df.loc[["predictions_model_target", "neutralized_predictions_model_target", "predictions_model_meta_weighted", "predictions_model_meta_lgbm", "predictions_model_omega"]]
+    rp = RadarPlot(df)
+    radar_plot = rp.get_plot()
+    rm = RaportManager([cumsum_cor_plot, radar_plot])
+    rm.generate_html("raport.html")
+
+    print("FINISHED GENERATING RAPORT")
