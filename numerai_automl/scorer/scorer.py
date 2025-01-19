@@ -47,6 +47,7 @@ class Scorer:
             )
         pd.set_option('display.float_format', lambda x: '%f' % x)
         summary = pd.DataFrame(target_summary_metrics).T
+        summary.index.name = 'predictions' 
 
         return summary
 
