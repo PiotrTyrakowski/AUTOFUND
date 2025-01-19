@@ -2,6 +2,7 @@ from numerai_automl.scorer.scorer import Scorer
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from numerai_automl.visual.cumsum_cor_features_plot import CumsumCorrFeaturesPlot
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -31,18 +32,9 @@ def test_cumsum_cor_plot():
     df2=scorer.compute_cumsum_correlation_per_era(df,'target')
     print(df2)
     # Usuwamy prefiks "prediction_" z nazw kolumn
-    df2.columns = [col.replace('prediction_', '') for col in df2.columns]
-
-    # Tworzymy wykres
-    df2.plot(figsize=(10, 6), linewidth=2)
-
-    # Dostosowanie wykresu
-    plt.title('Cumulative Correlation of Predictions and Target for each Era', fontsize=16)
-    plt.xlabel('Era', fontsize=14)
-    plt.ylabel('Cumulative Correlation', fontsize=14)
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.legend(title='Model', fontsize=12)
-    plt.show()
+    pr = CumsumCorrFeaturesPlot(df2)
+    fig = pr.get_plot()
+    fig.show()
 
     plt.savefig('cumsum_cor_plot.png')
     plt.close()  # Close the figure to free memory
